@@ -57,3 +57,8 @@ variable "cluster_name" {
   description = "The name of the vSphere cluster"
   type        = string
 }
+
+variable "ipv4_gateway" {
+  description = "The IPv4 gateway for the VM"
+  type        = string
+}
