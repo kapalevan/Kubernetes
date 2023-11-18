@@ -1,0 +1,14 @@
+---
+ansible_host: "3.9.3.150"
+gateway: "3.9.3.1"
+dns_servers:
+  - "3.9.3.122"
+  - "8.8.8.8"
+  - "8.8.4.4"
+backend_servers:
+  - name: master01.devops.tbc
+    ip: "3.9.3.151"
+  - name: master02.devops.tbc
+    ip: "3.9.3.152"
+  - name: master03.devops.tbc
+    ip: "3.9.3.153"

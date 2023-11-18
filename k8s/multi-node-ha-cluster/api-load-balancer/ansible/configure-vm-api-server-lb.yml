@@ -1,0 +1,45 @@
+---
+- name: Configure VM for HAProxy
+  hosts: all
+  become: yes
+  become_method: sudo
+
+  vars_files:
+    - vars.yml
+    - vault.yml
+
+  tasks:
+    - name: Set DNS servers
+      community.general.netplan:
+        renderer: networkd
+        config:
+          version: 2
+          ethernets:
+            ens160:
+              dhcp4: no
+              addresses: [ "{{ ansible_host }}/24" ]
+              gateway4: "{{ gateway }}"
+              nameservers:
+                addresses: "{{ dns_servers }}"
+      when: dns_servers is defined
+
+    - name: Update and upgrade system packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install HAProxy
+      apt:
+        name: haproxy
+        state: present
+
+    - name: Generate HAProxy configuration
+      template:
+        src: haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+
+    - name: Enable and restart HAProxy
+      systemd:
+        name: haproxy
+        enabled: yes
+        state: restarted

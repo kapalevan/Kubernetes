@@ -1,1 +1,2 @@
 k8s/multi-node-ha-cluster/api-load-balancer/terraform/*.tfvars
+k8s/multi-node-ha-cluster/api-load-balancer/ansible/vault.yml
