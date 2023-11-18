@@ -32,3 +32,8 @@ variable "vsphere_password" {
   description = "Password for vSphere"
   type        = string
 }
+
+variable "datacenter_name" {
+  description = "The name of the vSphere datacenter"
+  type        = string
+}
