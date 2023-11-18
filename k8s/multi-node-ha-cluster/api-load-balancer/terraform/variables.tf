@@ -67,3 +67,19 @@ variable "ipv4_gateway" {
   description = "The IPv4 gateway for the VM"
   type        = string
 }
+
+variable "dns_servers" {
+  description = "List of DNS servers"
+  type        = list(string)
+}
+
+variable "ssh_username" {
+  description = "SSH username for the VM"
+  type        = string
+}
+
+variable "ssh_password" {
+  description = "SSH password for the VM"
+  type        = string
+  sensitive   = true  # Marks the variable as sensitive, preventing it from being displayed in logs
+}

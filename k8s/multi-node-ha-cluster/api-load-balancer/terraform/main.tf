@@ -54,8 +54,8 @@ resource "vsphere_virtual_machine" "vm" {
 
   num_cpus = 2
   memory   = 2048
-  guest_id = "ubuntu64Guest"  # Replace with your specific guest OS type
-#  guest_id = data.vsphere_virtual_machine.template.guest_id
+#  guest_id = "ubuntu64Guest"  # Replace with your specific guest OS type
+  guest_id = data.vsphere_virtual_machine.template.guest_id
 
   network_interface {
     network_id   = data.vsphere_network.network.id
@@ -84,6 +84,29 @@ resource "vsphere_virtual_machine" "vm" {
       }
 
       ipv4_gateway = var.ipv4_gateway
+    }
+  }
+
+    provisioner "remote-exec" {
+      inline = [
+        "echo ${var.ssh_password} | sudo -S tee /etc/netplan/01-netcfg.yaml <<EOF",
+        "network:",
+        "  version: 2",
+        "  ethernets:",
+        "    ens160:",
+        "      dhcp4: true",
+        "      nameservers:",
+        "        addresses: [${join("\", \"", var.dns_servers)}]",
+        "EOF",
+        "echo ${var.ssh_password} | sudo -S netplan apply",
+      ]
+
+    connection {
+      type        = "ssh"
+      user        = var.ssh_username
+      password    = var.ssh_password
+      host        = self.default_ip_address  # Use the default IP address assigned to the VM
+      # private_key = file("<path-to-private-key>") # Uncomment if using SSH keys
     }
   }
 }
