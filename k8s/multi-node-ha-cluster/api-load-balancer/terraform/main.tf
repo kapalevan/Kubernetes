@@ -75,7 +75,7 @@ resource "vsphere_virtual_machine" "vm" {
     customize {
       linux_options {
         host_name = var.vm_hostname
-        domain    = "devops.tbc"
+#        domain    =  # uncomment in case it you need to add host to domain
       }
 
       network_interface {
