@@ -32,4 +32,4 @@ Great! With the updated structure, your repository should be more organized and 
 - **Testing**: Before applying changes in production, test your configurations in a controlled environment.
 - **Security**: Review scripts and configurations for security best practices, especially since this involves infrastructure provisioning and configuration management.
 
-This structure sets a strong foundation for your Kubernetes cluster provisioning project, providing clarity and ease of navigation for anyone working with your repository.
+This structure sets a strong foundation for your Kubernetes cluster provisioning project, providing clarity and ease of navigation for anyone working with your repository.git 

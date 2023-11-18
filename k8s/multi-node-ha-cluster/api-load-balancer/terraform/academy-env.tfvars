@@ -1,5 +1,6 @@
-vm_name       = "api-server-lb"
+vm_name        = "api-server-lb"
 vcenter_server = "https://vcenter.devops.tbc"
 template_name  = "Ubuntu-20-04-fresh-template"
 vm_ip          = "3.9.3.150"
 vm_hostname    = "api-server.devops.tbc"
+vm_folder      = "k8s"

@@ -38,6 +38,7 @@ resource "vsphere_virtual_machine" "vm" {
   name             = var.vm_name
   resource_pool_id = data.vsphere_resource_pool.pool.id
   datastore_id     = data.vsphere_datastore.datastore.id
+  folder           = var.vm_folder
 
   num_cpus = 2
   memory   = 2048
