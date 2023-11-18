@@ -47,3 +47,13 @@ variable "network_name" {
   description = "The name of the vSphere network"
   type        = string
 }
+
+#variable "resource_pool_name" {
+#  description = "The name of the vSphere resource pool"
+#  type        = string
+#}
+
+variable "cluster_name" {
+  description = "The name of the vSphere cluster"
+  type        = string
+}

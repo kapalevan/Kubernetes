@@ -29,6 +29,17 @@ data "vsphere_network" "network" {
   datacenter_id = data.vsphere_datacenter.dc.id
 }
 
+# Setting must be used if resource pool present in vSphere under Datacenter
+#data "vsphere_resource_pool" "pool" {
+#  name          = var.resource_pool_name
+#  datacenter_id = data.vsphere_datacenter.dc.id
+#}
+
+data "vsphere_compute_cluster" "cluster" {
+  name          = var.cluster_name
+  datacenter_id = data.vsphere_datacenter.dc.id
+}
+
 data "vsphere_virtual_machine" "template" {
   name          = var.template_name
   datacenter_id = data.vsphere_datacenter.dc.id
@@ -36,7 +47,8 @@ data "vsphere_virtual_machine" "template" {
 
 resource "vsphere_virtual_machine" "vm" {
   name             = var.vm_name
-  resource_pool_id = data.vsphere_resource_pool.pool.id
+#  resource_pool_id = data.vsphere_resource_pool.pool.id # Setting must be used if resource pool present in vSphere under Datacenter
+  resource_pool_id = data.vsphere_compute_cluster.cluster.resource_pool_id
   datastore_id     = data.vsphere_datastore.datastore.id
   folder           = var.vm_folder
 
