@@ -75,7 +75,7 @@ resource "vsphere_virtual_machine" "vm" {
     customize {
       linux_options {
         host_name = var.vm_hostname
-#        domain    =  # uncomment in case it you need to add host to domain
+        domain    = var.vm_domain
       }
 
       network_interface {
