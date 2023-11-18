@@ -16,8 +16,19 @@ variable "vm_ip" {
 
 variable "vm_hostname" {
   description = "Hostname for the VM"
+
 }
 variable "vm_folder" {
   description = "The destination folder for the VM in vSphere"
+  type        = string
+}
+
+variable "vsphere_user" {
+  description = "Username for vSphere"
+  type        = string
+}
+
+variable "vsphere_password" {
+  description = "Password for vSphere"
   type        = string
 }
