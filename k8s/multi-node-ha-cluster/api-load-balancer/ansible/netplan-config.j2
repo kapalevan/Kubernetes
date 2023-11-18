@@ -8,4 +8,7 @@ network:
         - "{{ ansible_host }}/24"
       gateway4: "{{ gateway }}"
       nameservers:
-        addresses: "{{ dns_servers }}"
+        addresses:
+        {% for address in dns_servers %}
+          - {{ address }}
+        {% endfor %}
