@@ -11,6 +11,7 @@ provider "vsphere" {
   user           = var.vsphere_user
   password       = var.vsphere_password
   vsphere_server = var.vcenter_server
+
   allow_unverified_ssl = true
 }
 
@@ -28,6 +29,12 @@ data "vsphere_network" "network" {
   datacenter_id = data.vsphere_datacenter.dc.id
 }
 
+# Setting must be used if resource pool present in vSphere under Datacenter
+#data "vsphere_resource_pool" "pool" {
+#  name          = var.resource_pool_name
+#  datacenter_id = data.vsphere_datacenter.dc.id
+#}
+
 data "vsphere_compute_cluster" "cluster" {
   name          = var.cluster_name
   datacenter_id = data.vsphere_datacenter.dc.id
@@ -39,15 +46,15 @@ data "vsphere_virtual_machine" "template" {
 }
 
 resource "vsphere_virtual_machine" "vm" {
-  count            = length(var.worker_nodes)
-  name             = var.worker_nodes[count.index].name
-  resource_pool_id = data.vsphere_compute_cluster.cluster.resource_pool_id
-  datastore_id     = data.vsphere_datastore.datastore.id
-  folder           = var.vm_folder
+  for_each          = var.worker_nodes
+  name              = each.key
+  resource_pool_id  = data.vsphere_compute_cluster.cluster.resource_pool_id
+  datastore_id      = data.vsphere_datastore.datastore.id
+  folder            = var.vm_folder
+  guest_id          = data.vsphere_virtual_machine.template.guest_id
+  num_cpus          = 8
+  memory            = 16384
 
-  num_cpus = 8
-  memory   = 16384
-  guest_id = data.vsphere_virtual_machine.template.guest_id
 
   network_interface {
     network_id   = data.vsphere_network.network.id
@@ -66,16 +73,18 @@ resource "vsphere_virtual_machine" "vm" {
 
     customize {
       linux_options {
-        host_name = var.worker_nodes[count.index].name
-        domain    = var.vm_domain
+        host_name = each.key
+        domain    = each.value.domain
       }
 
       network_interface {
-        ipv4_address = var.worker_nodes[count.index].ip
-        ipv4_netmask = 24
+        ipv4_address = each.value.ipv4_address
+        ipv4_netmask = each.value.ipv4_netmask
       }
-
-      ipv4_gateway = var.ipv4_gateway
+      
+      ipv4_gateway    = each.value.ipv4_gateway
+      dns_suffix_list = each.value.dns_suffix_list
+      dns_server_list = each.value.dns_server_list
     }
   }
 }
