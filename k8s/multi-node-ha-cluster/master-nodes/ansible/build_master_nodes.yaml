@@ -16,6 +16,23 @@
           - binutils
         update_cache: yes
 
+    - name: Ensure .vimrc exists
+      file:
+        path: "/root/.vimrc"
+        state: touch
+        mode: '0644'
+
+    - name: Configure vimrc
+      blockinfile:
+        path: "/root/.vimrc"
+        block: |
+          colorscheme ron
+          set tabstop=2
+          set shiftwidth=2
+          set expandtab
+        create: yes
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+
     - name: Setup Terminal Configuration
       blockinfile:
         path: "~/.vimrc"
