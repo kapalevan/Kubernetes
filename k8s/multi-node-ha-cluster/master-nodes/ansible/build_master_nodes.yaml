@@ -115,15 +115,17 @@
 
     - name: Install Kubernetes Components
       block:
-        - name: Add Kubernetes apt-key
+        - name: Add GPG key for Kubernetes repository
           apt_key:
-            url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+            url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
             state: present
 
         - name: Add Kubernetes repository
           apt_repository:
             repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
+            state: present
             filename: 'kubernetes.list'
+            update_cache: yes
 
         - name: Install Kubernetes packages
           apt:
