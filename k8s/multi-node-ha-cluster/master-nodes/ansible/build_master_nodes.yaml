@@ -114,6 +114,7 @@
             dest: /etc/containers/registries.conf
 
     - name: Install Kubernetes Components
+      hosts: masters
       tasks:
         - name: Install apt-transport-https and ca-certificates
           apt:
