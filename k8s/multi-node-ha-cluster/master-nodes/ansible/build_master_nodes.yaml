@@ -290,6 +290,11 @@
           register: init_output
           when: inventory_hostname == "master01"
 
+        - name: Debug init output
+          debug:
+            var: init_output.stdout
+          when: inventory_hostname == "master01"
+
         - name: Capture master and worker join commands
           set_fact:
             join_command_master: "{{ init_output.stdout | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
@@ -298,7 +303,7 @@
 
     - name: Join other master nodes to the cluster
       command: "{{ hostvars['master01'].join_command_master }}"
-      when: inventory_hostname != "master01"
+      when: inventory_hostname != "master01" and hostvars['master01'].join_command_master is defined
 
     - name: Setup kubeconfig and apply CNI Plugin on the first master
       block:
