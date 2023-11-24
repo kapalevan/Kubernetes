@@ -157,9 +157,9 @@
             kube_version: "{{ kubernetes_version }}"
 
         - name: Hold Kubernetes packages
-          apt:
+          dpkg_selections:
             name: "{{ item }}"
-            state: hold
+            selection: hold
           loop:
             - kubelet
             - kubeadm
