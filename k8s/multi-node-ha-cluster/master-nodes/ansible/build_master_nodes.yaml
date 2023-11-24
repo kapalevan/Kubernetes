@@ -85,14 +85,18 @@
 
     - name: Install Podman and dependencies
       block:
-        - name: Add Podman repository
-          apt_repository:
-            repo: "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }} /"
-            filename: 'libcontainers-stable'
 
         - name: Add GPG key for Podman repository
           apt_key:
             url: "http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }}/Release.key"
+            state: present
+
+        - name: Add Podman repository
+          apt_repository:
+            repo: "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }} /"
+            state: present
+            filename: 'libcontainers-stable'
+            update_cache: yes
 
         - name: Install Podman and CRI tools
           apt:
