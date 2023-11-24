@@ -114,7 +114,8 @@
             dest: /etc/containers/registries.conf
 
     - name: Install Kubernetes Components
-      block:
+      hosts: your_hosts
+      tasks:
         - name: Install apt-transport-https and ca-certificates
           apt:
             name:
@@ -173,6 +174,31 @@
             - kubelet
             - kubeadm
             - kubectl
+
+        # Add the tasks for unholding and removing Kubernetes packages here
+        - name: Unhold Kubernetes packages
+          dpkg_selections:
+            name: "{{ item }}"
+            selection: install
+          loop:
+            - docker.io
+            - containerd
+            - kubelet
+            - kubeadm
+            - kubectl
+            - kubernetes-cni
+
+        - name: Remove Kubernetes packages
+          apt:
+            name: "{{ item }}"
+            state: absent
+          loop:
+            - docker.io
+            - containerd
+            - kubelet
+            - kubeadm
+            - kubectl
+            - kubernetes-cni
 
     - name: Install containerd 1.6
       block:
