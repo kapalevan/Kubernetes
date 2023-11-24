@@ -143,6 +143,15 @@
                 state: present
                 update_cache: yes
 
+        - name: Unhold Kubernetes packages if they are held
+          dpkg_selections:
+            name: "{{ item }}"
+            selection: install
+          loop:
+            - kubelet
+            - kubeadm
+            - kubectl
+
         - name: Install Kubernetes packages
           apt:
             name:
