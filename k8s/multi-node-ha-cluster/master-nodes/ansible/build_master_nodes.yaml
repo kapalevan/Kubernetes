@@ -1,5 +1,5 @@
 - hosts: masters
-  become: true  # This will escalate privileges to root for all tasks
+  become: true
   vars_files:
     - vars.yaml
     - vault.yaml
@@ -67,6 +67,18 @@
           command: kubeadm reset -f
           ignore_errors: yes
 
+        - name: Unhold Kubernetes packages
+          dpkg_selections:
+            name: "{{ item }}"
+            selection: install
+          loop:
+            - docker.io
+            - containerd
+            - kubelet
+            - kubeadm
+            - kubectl
+            - kubernetes-cni
+
         - name: Remove existing Kubernetes packages
           apt:
             name:
@@ -114,8 +126,7 @@
             dest: /etc/containers/registries.conf
 
     - name: Install Kubernetes Components
-      hosts: masters
-      tasks:
+      block:
         - name: Install apt-transport-https and ca-certificates
           apt:
             name:
@@ -174,31 +185,6 @@
             - kubelet
             - kubeadm
             - kubectl
-
-        # Add the tasks for unholding and removing Kubernetes packages here
-        - name: Unhold Kubernetes packages
-          dpkg_selections:
-            name: "{{ item }}"
-            selection: install
-          loop:
-            - docker.io
-            - containerd
-            - kubelet
-            - kubeadm
-            - kubectl
-            - kubernetes-cni
-
-        - name: Remove Kubernetes packages
-          apt:
-            name: "{{ item }}"
-            state: absent
-          loop:
-            - docker.io
-            - containerd
-            - kubelet
-            - kubeadm
-            - kubectl
-            - kubernetes-cni
 
     - name: Install containerd 1.6
       block:
