@@ -115,17 +115,33 @@
 
     - name: Install Kubernetes Components
       block:
-        - name: Add GPG key for Kubernetes repository
-          apt_key:
-            url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+        - name: Install apt-transport-https and ca-certificates
+          apt:
+            name:
+              - apt-transport-https
+              - ca-certificates
             state: present
-
-        - name: Add Kubernetes repository
-          apt_repository:
-            repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
-            state: present
-            filename: 'kubernetes.list'
             update_cache: yes
+
+        - name: Add Kubernetes GPG key
+          become: yes
+          block:
+            - name: Create /etc/apt/keyrings directory
+              file:
+                path: /etc/apt/keyrings
+                state: directory
+                mode: '0755'
+
+            - name: Add Kubernetes GPG key to keyring
+              ansible.builtin.shell: |
+                curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --yes --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+
+            - name: Add Kubernetes repository
+              apt_repository:
+                repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
+                filename: 'kubernetes.list'
+                state: present
+                update_cache: yes
 
         - name: Install Kubernetes packages
           apt:
