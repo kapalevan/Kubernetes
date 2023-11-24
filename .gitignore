@@ -1,2 +1,2 @@
 *.tfvars
-k8s/multi-node-ha-cluster/api-load-balancer/ansible/vault.yml
+*vault.yml

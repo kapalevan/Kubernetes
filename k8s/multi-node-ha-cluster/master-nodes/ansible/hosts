@@ -1,0 +1,4 @@
+[masters]
+master01 ansible_host=192.168.0.101
+master02 ansible_host=192.168.0.102
+master03 ansible_host=192.168.0.103
