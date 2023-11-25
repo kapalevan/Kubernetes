@@ -24,16 +24,41 @@
           - binutils
         update_cache: yes
 
-    - name: Setup Terminal
-      lineinfile:
-        path: ~/.bashrc
-        line: "{{ item }}"
-      loop:
-        - 'force_color_prompt=yes'
-        - 'source <(kubectl completion bash)'
-        - 'alias k=kubectl'
-        - 'alias c=clear'
-        - 'complete -F __start_kubectl k'
+    - name: Ensure .vimrc exists
+      file:
+        path: "/root/.vimrc"
+        state: touch
+        mode: '0644'
+
+    - name: Configure vimrc
+      blockinfile:
+        path: "/root/.vimrc"
+        block: |
+          colorscheme ron
+          set tabstop=2
+          set shiftwidth=2
+          set expandtab
+        create: yes
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+
+    - name: Setup Terminal Configuration
+      blockinfile:
+        path: "~/.vimrc"
+        block: |
+          colorscheme ron
+          set tabstop=2
+          set shiftwidth=2
+          set expandtab
+
+    - name: Configure Bashrc for kubectl
+      blockinfile:
+        path: "~/.bashrc"
+        block: |
+          source <(kubectl completion bash)
+          alias k=kubectl
+          alias c=clear
+          complete -F __start_kubectl k
+          force_color_prompt=yes
 
     - name: Disable Swap
       command: swapoff -a
@@ -51,9 +76,17 @@
           command: kubeadm reset -f
           ignore_errors: yes
 
-        - name: Remove existing crictl containers
-          command: crictl rm --force $(crictl ps -a -q)
-          ignore_errors: yes
+        - name: Unhold Kubernetes packages
+          dpkg_selections:
+            name: "{{ item }}"
+            selection: install
+          loop:
+            - docker.io
+            - containerd
+            - kubelet
+            - kubeadm
+            - kubectl
+            - kubernetes-cni
 
         - name: Unhold kubernetes packages
           command: apt-mark unhold kubelet kubeadm kubectl kubernetes-cni
@@ -69,6 +102,7 @@
               - kubectl
               - kubernetes-cni
             state: absent
+            purge: yes
 
         - name: Autoremove unneeded packages
           apt:
@@ -80,11 +114,18 @@
 
     - name: Install Podman and related tools
       block:
-        - name: Add podman repository
-          apt_repository:
-            repo: "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }}/ /"
+
+        - name: Add GPG key for Podman repository
+          apt_key:
+            url: "http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }}/Release.key"
             state: present
 
+        - name: Add Podman repository
+          apt_repository:
+            repo: "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }} /"
+            state: present
+            filename: 'libcontainers-stable'
+            update_cache: yes
         - name: Install podman and cri-tools
           apt:
             name:
@@ -103,22 +144,50 @@
 
     - name: Install Kubernetes Components
       block:
+        - name: Install apt-transport-https and ca-certificates
+          apt:
+            name:
+              - apt-transport-https
+              - ca-certificates
+            state: present
+            update_cache: yes
+
         - name: Add Kubernetes GPG key
-          apt_key:
-            url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-            state: present
+          become: yes
+          block:
+            - name: Create /etc/apt/keyrings directory
+              file:
+                path: /etc/apt/keyrings
+                state: directory
+                mode: '0755'
 
-        - name: Add Kubernetes apt repository
-          apt_repository:
-            repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
-            state: present
+            - name: Add Kubernetes GPG key to keyring
+              ansible.builtin.shell: |
+                curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --yes --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
+            - name: Add Kubernetes repository
+              apt_repository:
+                repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
+                filename: 'kubernetes.list'
+                state: present
+                update_cache: yes
+
+        - name: Unhold Kubernetes packages if they are held
+          dpkg_selections:
+            name: "{{ item }}"
+            selection: install
+          loop:
+            - kubelet
+            - kubeadm
+            - kubectl
         - name: Install Kubernetes packages
           apt:
             name:
-              - "kubelet={{ kubernetes_version }}-00"
-              - "kubeadm={{ kubernetes_version }}-00"
-              - "kubectl={{ kubernetes_version }}-00"
+              - docker.io
+              - containerd
+              - kubelet={{ kubernetes_version }}-00
+              - kubeadm={{ kubernetes_version }}-00
+              - kubectl={{ kubernetes_version }}-00
               - kubernetes-cni
             update_cache: yes
             state: present
@@ -129,7 +198,13 @@
             state: directory
 
         - name: Hold Kubernetes packages
-          command: apt-mark hold kubelet kubeadm kubectl
+          dpkg_selections:
+            name: "{{ item }}"
+            selection: hold
+          loop:
+            - kubelet
+            - kubeadm
+            - kubectl
 
         - name: Install containerd 1.6
           block:
