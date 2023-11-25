@@ -4,6 +4,7 @@
   become: true
   vars_files:
     - vars.yaml
+    - vault.yaml
 
   tasks:
     - name: Ensure running as root
