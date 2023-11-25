@@ -3,7 +3,6 @@
   hosts: masters
   become: yes
   gather_facts: yes
-  ask_become_pass: true
   vars_files:
     - vars.yaml
     - vault.yaml
@@ -348,12 +347,9 @@
         #   when: kubeadm_init is succeeded and inventory_hostname == 'master01'
         #   ignore_errors: yes
         - name: Capture master join command
-          shell: |
-            kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
-          register: join_command
-          args:
-            executable: /bin/bash
-
+          shell: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
+          delegate_to: localhost
+          become: yes
           environment:
             PATH: "/path/to/kubeadm:$PATH"
 
