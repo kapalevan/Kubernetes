@@ -277,18 +277,19 @@
         enabled: yes
         state: started
 
-    - name: Initialize Kubernetes cluster on first master
+    - name: Initialize Kubernetes cluster
       block:
         - name: Initialize Kubernetes cluster
           command: >
             kubeadm init
-            --kubernetes-version {{ kube_version }}
+            --kubernetes-version {{ kubernetes_version }}
             --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
             --upload-certs
             --apiserver-advertise-address {{ apiserver_advertise_address }}
             --pod-network-cidr {{ pod_subnet }}
           register: init_output
           when: inventory_hostname == "master01"
+
 
         - name: Debug init output
           debug:
@@ -323,6 +324,10 @@
         - name: Apply Calico CNI Plugin
           command: "kubectl apply -f https://github.com/kapalevan/Kubernetes/raw/main/k8s/multi-node-ha-cluster/master-nodes/yaml-manifests/cni/calico/calico.yaml"
       when: inventory_hostname == "master01"
+
+    - name: Debug kube_version
+      ansible.builtin.debug:
+        var: kube_version
 
     - name: Setup etcdctl
       block:
