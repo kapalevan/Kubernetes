@@ -1,8 +1,6 @@
 ---
 - name: Setup Kubernetes Master Node
   hosts: masters
-  become: yes
-  gather_facts: yes
   vars_files:
     - vars.yaml
     - vault.yaml
