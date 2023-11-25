@@ -313,13 +313,7 @@
           when: inventory_hostname == "master01"
 
     - name: Generate kubelet config file
-      command: kubeadm config print kubelet > /var/lib/kubelet/config.yaml
-      when: inventory_hostname != "master01"
-
-    - name: Template kubelet config file
-      template:
-        src: kubelet-config.yaml.j2
-        dest: /var/lib/kubelet/config.yaml
+      shell: kubeadm config print kubelet > /var/lib/kubelet/config.yaml
       when: inventory_hostname != "master01"
 
     - name: Set permissions for kubelet config file
