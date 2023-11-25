@@ -325,7 +325,6 @@
       when: inventory_hostname == "master01"
 
     - name: Setup etcdctl
-      hosts: all
       tasks:
         - name: Get architecture using dpkg
           command: dpkg --print-architecture
