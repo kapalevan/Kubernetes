@@ -94,6 +94,13 @@
             update_cache: yes
             state: present
 
+    - name: Configure container registries
+      copy:
+        content: |
+          [registries.search]
+          registries = ['docker.io']
+        dest: /etc/containers/registries.conf
+
     - name: Install Kubernetes Components
       block:
         - name: Add Kubernetes GPG key
@@ -295,16 +302,26 @@
 
     - name: Setup etcdctl
       block:
+        - name: Get architecture using dpkg
+          command: dpkg --print-architecture
+          register: dpkg_architecture
+
         - name: Download etcdctl
           get_url:
-            url: https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz
-            dest: /tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz
+            url: "https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
+            dest: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
 
         - name: Extract etcdctl
           unarchive:
-            src: /tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz
+            src: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
             dest: /usr/bin/
             remote_src: yes
+            extra_opts: ["--strip-components=1"]
+
+        - name: Cleanup downloaded files
+          file:
+            path: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
+            state: absent
 
     - name: Display command for joining other master nodes
       command: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
