@@ -324,35 +324,33 @@
           command: "kubectl apply -f https://github.com/kapalevan/Kubernetes/raw/main/k8s/multi-node-ha-cluster/master-nodes/yaml-manifests/cni/calico/calico.yaml"
       when: inventory_hostname == "master01"
 
-    - hosts: all
-      tasks:
-        - name: Setup etcdctl
-          block:
-            - name: Get architecture using dpkg
-              ansible.builtin.command: dpkg --print-architecture
-              register: dpkg_architecture
-              changed_when: false
+    - name: Setup etcdctl
+      block:
+        - name: Get architecture using dpkg
+          ansible.builtin.command: dpkg --print-architecture
+          register: dpkg_architecture
+          changed_when: false
 
-            - name: Download etcdctl
-              ansible.builtin.get_url:
-                url: "https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
-                dest: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
-              vars:
-                etcdctl_version: "v3.5.1"
+        - name: Download etcdctl
+          ansible.builtin.get_url:
+            url: "https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
+            dest: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
+          vars:
+            etcdctl_version: "v3.5.1"
 
-            - name: Extract etcdctl
-              ansible.builtin.unarchive:
-                src: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
-                dest: "/tmp/"
-                remote_src: yes
-                extra_opts: ["--strip-components=1"]
+        - name: Extract etcdctl
+          ansible.builtin.unarchive:
+            src: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
+            dest: "/tmp/"
+            remote_src: yes
+            extra_opts: ["--strip-components=1"]
 
-            - name: Move etcdctl to /usr/bin
-              ansible.builtin.command:
-                cmd: mv /tmp/etcdctl /usr/bin/
-                creates: "/usr/bin/etcdctl"
+        - name: Move etcdctl to /usr/bin
+          ansible.builtin.command:
+            cmd: mv /tmp/etcdctl /usr/bin/
+            creates: "/usr/bin/etcdctl"
 
-            - name: Cleanup downloaded files
-              ansible.builtin.file:
-                path: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
-                state: absent
+        - name: Cleanup downloaded files
+          ansible.builtin.file:
+            path: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
+            state: absent
