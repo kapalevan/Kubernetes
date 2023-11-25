@@ -298,9 +298,9 @@
             --upload-certs
             --apiserver-advertise-address {{ apiserver_advertise_address }}
             --pod-network-cidr {{ pod_subnet }}
-      register: init_output
-      when: inventory_hostname == "master01"
-      changed_when: false
+          register: init_output
+          when: inventory_hostname == "master01"
+          changed_when: false
 
     # - name: Store join commands in local file
     #   block:
