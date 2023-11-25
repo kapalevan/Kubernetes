@@ -313,10 +313,17 @@
           when: inventory_hostname == "master01"
           changed_when: false
 
+    - name: Store join commands in local file
+      block:
+        - name: Create tmp directory
+          file:
+            path: "$HOME/tmp"
+            state: directory
+            mode: '0755'
         - name: Store join commands in local file
           copy:
             content: "{{ init_output.stdout }}"
-            dest: "/tmp/kube_join_commands"
+            dest: "$HOME/tmp/kube_join_commands"
           when: inventory_hostname == "master01"
           delegate_to: localhost
 
@@ -352,7 +359,7 @@
       become: yes
 
     - name: Join other master nodes to the cluster
-      command: "{{ lookup('file', '/tmp/kube_join_commands') | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
+      command: "{{ lookup('file', '$HOME/tmp/kube_join_commands') | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
       when: inventory_hostname != "master01" and inventory_hostname in groups['masters']
       delegate_to: "{{ inventory_hostname }}"
 
