@@ -169,9 +169,9 @@
             name:
               - docker.io
               - containerd
-              - kubelet={{ kube_version }}-00
-              - kubeadm={{ kube_version }}-00
-              - kubectl={{ kube_version }}-00
+              - kubelet={{ kubernetes_version }}-00
+              - kubeadm={{ kubernetes_version }}-00
+              - kubectl={{ kubernetes_version }}-00
               - kubernetes-cni
             state: present
           vars:
@@ -324,29 +324,31 @@
           command: "kubectl apply -f https://github.com/kapalevan/Kubernetes/raw/main/k8s/multi-node-ha-cluster/master-nodes/yaml-manifests/cni/calico/calico.yaml"
       when: inventory_hostname == "master01"
 
-    - name: Setup etcdctl
-      block:
-        - name: Download etcdctl
-          get_url:
-            url: "https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ etcdctl_arch }}.tar.gz"
-            dest: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ etcdctl_arch }}.tar.gz"
-          vars:
-            etcdctl_version: "v3.5.1"
-            etcdctl_arch: "{{ ansible_architecture }}"
+- name: Setup etcdctl
+  block:
+    - name: Download etcdctl
+      get_url:
+        url: "https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz"
+        dest: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz"
+      vars:
+        etcdctl_version: "v3.5.1"
 
-        - name: Extract etcdctl
-          unarchive:
-            src: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ etcdctl_arch }}.tar.gz"
-            dest: "/tmp/"
-            remote_src: yes
-            extra_opts: ["--strip-components=1"]
+    - name: Extract etcdctl
+      command:
+        cmd: tar xzf /tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz -C /tmp/ etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}/etcdctl
+      args:
+        creates: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}/etcdctl"
 
-        - name: Move etcdctl to /usr/bin
-          command: mv /tmp/etcdctl /usr/bin/
-          args:
-            creates: "/usr/bin/etcdctl"
+    - name: Move etcdctl to /usr/bin
+      command:
+        cmd: mv /tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}/etcdctl /usr/bin/
+      args:
+        creates: "/usr/bin/etcdctl"
 
-        - name: Cleanup downloaded files
-          file:
-            path: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ etcdctl_arch }}.tar.gz"
-            state: absent
+    - name: Cleanup downloaded files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz"
+        - "/tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}"
