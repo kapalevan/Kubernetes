@@ -71,7 +71,7 @@
         - name: Unhold Kubernetes packages
           dpkg_selections:
             name: "{{ item }}"
-            state: absent
+            selection: install
           loop:
             - docker.io
             - containerd
@@ -79,7 +79,6 @@
             - kubeadm
             - kubectl
             - kubernetes-cni
-          when: ansible_distribution_version == '20.04'
 
         - name: Remove existing Kubernetes packages
           apt:
