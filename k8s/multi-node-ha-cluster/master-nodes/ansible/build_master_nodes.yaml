@@ -137,6 +137,9 @@
             dest: /usr/bin/
             remote_src: yes
 
+        - name: Unmask containerd service
+          command: systemctl unmask containerd
+
         - name: Start containerd service
           systemd:
             name: containerd
