@@ -79,53 +79,53 @@
             - kubeadm
             - kubectl
             - kubernetes-cni
-      when: ansible_distribution_version == '20.04'
+          when: ansible_distribution_version == '20.04'
 
-    - name: Remove existing Kubernetes packages
-      apt:
-        name:
-          - docker.io
-          - containerd
-          - kubelet
-          - kubeadm
-          - kubectl
-          - kubernetes-cni
-        state: absent
-        purge: yes
+        - name: Remove existing Kubernetes packages
+          apt:
+            name:
+              - docker.io
+              - containerd
+              - kubelet
+              - kubeadm
+              - kubectl
+              - kubernetes-cni
+            state: absent
+            purge: yes
 
-    - name: Autoremove unnecessary packages
-      apt:
-        autoremove: yes
+        - name: Autoremove unnecessary packages
+          apt:
+            autoremove: yes
 
     - name: Install Podman and dependencies
       block:
 
-    - name: Add GPG key for Podman repository
-      apt_key:
-        url: "http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }}/Release.key"
-        state: present
+        - name: Add GPG key for Podman repository
+          apt_key:
+            url: "http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }}/Release.key"
+            state: present
 
-    - name: Add Podman repository
-      apt_repository:
-        repo: "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }} /"
-        state: present
-        filename: 'libcontainers-stable'
-        update_cache: yes
+        - name: Add Podman repository
+          apt_repository:
+            repo: "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }} /"
+            state: present
+            filename: 'libcontainers-stable'
+            update_cache: yes
 
-    - name: Install Podman and CRI tools
-      apt:
-        name:
-          - podman
-          - cri-tools
-          - containers-common
-        state: present
+        - name: Install Podman and CRI tools
+          apt:
+            name:
+              - podman
+              - cri-tools
+              - containers-common
+            state: present
 
-    - name: Configure container registries
-      copy:
-        content: |
-          [registries.search]
-          registries = ['docker.io']
-        dest: /etc/containers/registries.conf
+        - name: Configure container registries
+          copy:
+            content: |
+              [registries.search]
+              registries = ['docker.io']
+            dest: /etc/containers/registries.conf
 
     - name: Install Kubernetes Components
       block:
