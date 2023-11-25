@@ -316,7 +316,7 @@
       shell: kubeadm config print init-defaults --component-configs KubeletConfiguration > /var/lib/kubelet/config.yaml
       args:
         executable: /bin/bash
-      when: inventory_hostname != "master01"
+      become: yes
 
     - name: Set permissions for kubelet config file
       file:
@@ -324,13 +324,13 @@
         owner: root
         group: root
         mode: '0644'
-      when: inventory_hostname != "master01"
+      become: yes
 
     - name: Restart kubelet service
       systemd:
         name: kubelet
         state: restarted
-      when: inventory_hostname != "master01"
+      become: yes
 
     - name: Join other master nodes to the cluster
       command: "{{ hostvars['master01'].join_command_master }}"
