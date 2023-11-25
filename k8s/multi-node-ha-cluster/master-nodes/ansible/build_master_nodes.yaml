@@ -290,7 +290,7 @@
 
     - name: Initialize Kubernetes cluster
       block:
-        - name: Initialize Kubernetes cluster
+        - name: Initialize Kubernetes cluster on master01
           command: >
             kubeadm init
             --kubernetes-version {{ kubernetes_version }}
@@ -301,6 +301,10 @@
           register: init_output
           when: inventory_hostname == "master01"
           changed_when: false
+
+    - name: Capture master node join command
+      shell: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
+      register: master_join_command
 
     # - name: Store join commands in local file
     #   block:
@@ -372,10 +376,10 @@
           command: sudo update-ca-certificates
           when: inventory_hostname == "master01"
 
-        - name: Join other master nodes to the cluster
-          command: "{{ join_command_master }}"
-          when: inventory_hostname != "master01" and join_command_master is defined
-
+        - name: Capture worker node join command
+          shell: kubeadm token create --print-join-command --ttl 0
+          register: worker_join_command
+          when: inventory_hostname == "master01"
         # - name: Join other master nodes to the cluster
         #   command: >
         #     kubeadm join {{ load_balancer_dns }}:{{ load_balancer_port }}
