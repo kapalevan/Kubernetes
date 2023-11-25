@@ -337,19 +337,19 @@
       delegate_to: localhost
       run_once: true
       block:
-        # - name: Capture master join command
-        #   become: yes
-        #   shell: |
-        #     export PATH=$PATH:/path/to/kubeadm # Replace with actual path if necessary
-        #     kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
-        #   register: master_join_command
-        #   delegate_to: localhost
-        #   when: kubeadm_init is succeeded and inventory_hostname == 'master01'
-        #   ignore_errors: yes
         - name: Capture master join command
-          shell: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
-          delegate_to: localhost
           become: yes
+          shell: |
+            export PATH=$PATH:/path/to/kubeadm # Replace with actual path if necessary
+            kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
+          register: master_join_command
+          delegate_to: localhost
+          when: kubeadm_init is succeeded and inventory_hostname == 'master01'
+          ignore_errors: yes
+        # - name: Capture master join command
+        #   shell: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
+        #   delegate_to: localhost
+        #   become: yes
           environment:
             PATH: "/path/to/kubeadm:$PATH"
 
