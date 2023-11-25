@@ -289,41 +289,106 @@
       when: inventory_hostname == "master01"
 
     - name: Initialize Kubernetes cluster
-      shell: >
-        kubeadm init
-        --kubernetes-version {{ kubernetes_version }}
-        --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
-        --upload-certs
-        --apiserver-advertise-address {{ apiserver_advertise_address }}
-        --pod-network-cidr {{ pod_subnet }}
+      block:
+        - name: Initialize Kubernetes cluster
+          command: >
+            kubeadm init
+            --kubernetes-version {{ kubernetes_version }}
+            --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
+            --upload-certs
+            --apiserver-advertise-address {{ apiserver_advertise_address }}
+            --pod-network-cidr {{ pod_subnet }}
       register: init_output
       when: inventory_hostname == "master01"
+      changed_when: false
 
-    - name: Store join commands in local file
-      block:
-        - name: Create tmp directory
-          file:
-            path: "{{ ansible_env.HOME }}/tmp"
-            state: directory
-            mode: '0755'
-        - name: Store join commands in local file
-          copy:
-            content: "{{ init_output.stdout }}"
-            dest: "{{ ansible_env.HOME }}/tmp/kube_join_commands"
-          when: inventory_hostname == "master01"
-          delegate_to: localhost
+    # - name: Store join commands in local file
+    #   block:
+    #     - name: Create tmp directory
+    #       file:
+    #         path: "$HOME/tmp"
+    #         state: directory
+    #         mode: '0755'
+    #     - name: Store join commands in local file
+    #       copy:
+    #         content: "{{ init_output.stdout }}"
+    #         dest: "$HOME/tmp/kube_join_commands"
+    #       when: inventory_hostname == "master01"
+    #       delegate_to: localhost
 
-    - name: Debug init output
-      debug:
-        var: init_output.stdout
-      when: inventory_hostname == "master01"
+    # - name: Debug init output
+    #   debug:
+    #     var: init_output.stdout
+    #   when: inventory_hostname == "master01"
+  
+    # - name: Capture master and worker join commands
+    #   set_fact:
+    #     join_command_master: "{{ init_output.stdout | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
+    #     join_command_worker: "{{ init_output.stdout | regex_search('kubeadm join .+\\n') }}"
+    #   when: inventory_hostname == "master01"
 
+    - name: Generate kubelet config file
+      shell: kubeadm config print init-defaults --component-configs KubeletConfiguration > /var/lib/kubelet/config.yaml
+      args:
+        executable: /bin/bash
+      become: yes
+
+    - name: Set permissions for kubelet config file
+      file:
+        path: /var/lib/kubelet/config.yaml
+        owner: root
+        group: root
+        mode: '0644'
+      become: yes
+
+    - name: Restart kubelet service
+      systemd:
+        name: kubelet
+        state: restarted
+      become: yes
+
+    # - name: Join other master nodes to the cluster
+    #   command: "{{ lookup('file', '$HOME/tmp/kube_join_commands') | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
+    #   when: inventory_hostname != "master01" and inventory_hostname in groups['masters']
+    #   delegate_to: "{{ inventory_hostname }}"
+
+    
     - name: Setup kubeconfig and apply CNI Plugin on the first master
       block:
+        - name: Create .kube directory
+          file:
+            path: "$HOME/.kube"
+            state: directory
+            mode: '0755'
+
+        - name: Extract Kubernetes API Server's Certificate
+          shell: |
+            APISERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
+            APISERVER_CERT=$(openssl s_client -connect ${APISERVER#https://} </dev/null 2>/dev/null | openssl x509 -outform PEM)
+            echo "${APISERVER_CERT}" | sudo tee /usr/local/share/ca-certificates/kubernetes.crt
+          when: inventory_hostname == "master01"
+
+        - name: Update CA Certificates
+          command: sudo update-ca-certificates
+          when: inventory_hostname == "master01"
+
+        - name: Join other master nodes to the cluster
+          command: "{{ join_command_master }}"
+          when: inventory_hostname != "master01" and join_command_master is defined
+
+        # - name: Join other master nodes to the cluster
+        #   command: >
+        #     kubeadm join {{ load_balancer_dns }}:{{ load_balancer_port }}
+        #     --token your_token
+        #     --discovery-token-ca-cert-hash sha256:your_hash
+        #     --control-plane
+        #     --certificate-key your_certificate_key
+        #   when: inventory_hostname != "master01"
+
         - name: Copy admin.conf to user's kube config
           copy:
             src: "/etc/kubernetes/admin.conf"
-            dest: "{{ ansible_env.HOME }}/.kube/config"
+            dest: "$HOME/.kube/config"
             remote_src: yes
             mode: '0644'
 
@@ -331,26 +396,37 @@
           command: "kubectl apply -f https://github.com/kapalevan/Kubernetes/raw/main/k8s/multi-node-ha-cluster/master-nodes/yaml-manifests/cni/calico/calico.yaml"
       when: inventory_hostname == "master01"
 
+    - name: Debug kubernetes_version
+      ansible.builtin.debug:
+        var: kubernetes_version
+
     - name: Setup etcdctl
       block:
+        - name: Get architecture using dpkg
+          ansible.builtin.command: dpkg --print-architecture
+          register: dpkg_architecture
+          changed_when: false
+
         - name: Download etcdctl
-          get_url:
-            url: "https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-amd64.tar.gz"
-            dest: "/tmp/etcd-{{ etcdctl_version }}-linux-amd64.tar.gz"
+          ansible.builtin.get_url:
+            url: "https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
+            dest: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
+          vars:
+            etcdctl_version: "v3.5.1"
 
         - name: Extract etcdctl
-          unarchive:
-            src: "/tmp/etcd-{{ etcdctl_version }}-linux-amd64.tar.gz"
+          ansible.builtin.unarchive:
+            src: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
             dest: "/tmp/"
             remote_src: yes
             extra_opts: ["--strip-components=1"]
 
         - name: Move etcdctl to /usr/bin
-          command: mv /tmp/etcdctl /usr/bin/
-          args:
+          ansible.builtin.command:
+            cmd: mv /tmp/etcdctl /usr/bin/
             creates: "/usr/bin/etcdctl"
 
         - name: Cleanup downloaded files
-          file:
-            path: "/tmp/etcd-{{ etcdctl_version }}-linux-amd64.tar.gz"
+          ansible.builtin.file:
+            path: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
             state: absent
