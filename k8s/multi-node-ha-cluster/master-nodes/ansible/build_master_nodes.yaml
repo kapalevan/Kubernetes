@@ -308,12 +308,13 @@
           
         - name: Extract and save certificate key
           shell: kubeadm init phase upload-certs --upload-certs
-          register: certificate_key
-          when: inventory_hostname == "master01" and init_output is changed
+          register: upload_certs_output
+          when: inventory_hostname == "master01"
 
-        - name: Debug certificate key
+        - name: Debug certificate key output
           debug:
-            var: certificate_key
+            var: upload_certs_output.stdout_lines
+            
           when: inventory_hostname == "master01" and init_output is changed
 
         - name: Capture master node join command
@@ -392,14 +393,19 @@
             echo "${APISERVER_CERT}" | sudo tee /usr/local/share/ca-certificates/kubernetes.crt
           when: inventory_hostname == "master01"
 
-        - name: Update CA Certificates
-          command: sudo update-ca-certificates
+        - name: Extract certificate key
+          set_fact:
+            certificate_key: "{{ upload_certs_output.stdout | regex_search('(b[0-9a-f]{64})') }}"
           when: inventory_hostname == "master01"
 
-        - name: Capture worker node join command
-          shell: kubeadm token create --print-join-command --ttl 0
-          register: worker_join_command
+        - name: Generate master node join command
+          shell: kubeadm token create --print-join-command --certificate-key {{ certificate_key }}
+          register: master_join_command
           when: inventory_hostname == "master01"
+
+        - name: Debug master node join command
+          debug:
+            var: master_join_command.stdout
 
         # - name: Join other master nodes to the cluster
         #   command: >
