@@ -1,12 +1,19 @@
-- hosts: masters
+---
+- name: Setup Kubernetes Master Node
+  hosts: masters
   become: true
   vars_files:
     - vars.yaml
-    - vault.yaml
+
   tasks:
-    - name: Check Ubuntu Version
+    - name: Ensure running as root
       fail:
-        msg: "This playbook is only compatible with Ubuntu 20.04."
+        msg: "This script must be run as root"
+      when: ansible_user_id != 'root'
+
+    - name: Check for Ubuntu 20.04
+      fail:
+        msg: "This script only works on Ubuntu 20.04"
       when: ansible_distribution != 'Ubuntu' or ansible_distribution_version != '20.04'
 
     - name: Update and Install Prerequisites
@@ -16,49 +23,25 @@
           - binutils
         update_cache: yes
 
-    - name: Ensure .vimrc exists
-      file:
-        path: "/root/.vimrc"
-        state: touch
-        mode: '0644'
-
-    - name: Configure vimrc
-      blockinfile:
-        path: "/root/.vimrc"
-        block: |
-          colorscheme ron
-          set tabstop=2
-          set shiftwidth=2
-          set expandtab
-        create: yes
-        marker: "# {mark} ANSIBLE MANAGED BLOCK"
-
-    - name: Setup Terminal Configuration
-      blockinfile:
-        path: "~/.vimrc"
-        block: |
-          colorscheme ron
-          set tabstop=2
-          set shiftwidth=2
-          set expandtab
-
-    - name: Configure Bashrc for kubectl
-      blockinfile:
-        path: "~/.bashrc"
-        block: |
-          source <(kubectl completion bash)
-          alias k=kubectl
-          alias c=clear
-          complete -F __start_kubectl k
-          force_color_prompt=yes
+    - name: Setup Terminal
+      lineinfile:
+        path: ~/.bashrc
+        line: "{{ item }}"
+      loop:
+        - 'force_color_prompt=yes'
+        - 'source <(kubectl completion bash)'
+        - 'alias k=kubectl'
+        - 'alias c=clear'
+        - 'complete -F __start_kubectl k'
 
     - name: Disable Swap
       command: swapoff -a
+      ignore_errors: yes
 
-    - name: Update fstab to disable swap
+    - name: Comment Swap in fstab
       lineinfile:
         path: /etc/fstab
-        regexp: '^([^#].*\sswap\s)'
+        regexp: '^\s*\S+\s+swap\s'
         line: '#\1'
 
     - name: Remove any existing Kubernetes installations
@@ -67,19 +50,15 @@
           command: kubeadm reset -f
           ignore_errors: yes
 
-        - name: Unhold Kubernetes packages
-          dpkg_selections:
-            name: "{{ item }}"
-            selection: install
-          loop:
-            - docker.io
-            - containerd
-            - kubelet
-            - kubeadm
-            - kubectl
-            - kubernetes-cni
+        - name: Remove existing crictl containers
+          command: crictl rm --force $(crictl ps -a -q)
+          ignore_errors: yes
 
-        - name: Remove existing Kubernetes packages
+        - name: Unhold kubernetes packages
+          command: apt-mark unhold kubelet kubeadm kubectl kubernetes-cni
+          ignore_errors: yes
+
+        - name: Remove Kubernetes components
           apt:
             name:
               - docker.io
@@ -89,173 +68,97 @@
               - kubectl
               - kubernetes-cni
             state: absent
-            purge: yes
 
-        - name: Autoremove unnecessary packages
+        - name: Autoremove unneeded packages
           apt:
             autoremove: yes
 
-    - name: Install Podman and dependencies
+        - name: Reload systemd daemon
+          systemd:
+            daemon_reload: yes
+
+    - name: Install Podman and related tools
       block:
-
-        - name: Add GPG key for Podman repository
-          apt_key:
-            url: "http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }}/Release.key"
-            state: present
-
-        - name: Add Podman repository
+        - name: Add podman repository
           apt_repository:
-            repo: "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }} /"
+            repo: "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }}/ /"
             state: present
-            filename: 'libcontainers-stable'
-            update_cache: yes
 
-        - name: Install Podman and CRI tools
+        - name: Install podman and cri-tools
           apt:
             name:
               - podman
               - cri-tools
               - containers-common
+            update_cache: yes
             state: present
-
-        - name: Configure container registries
-          copy:
-            content: |
-              [registries.search]
-              registries = ['docker.io']
-            dest: /etc/containers/registries.conf
 
     - name: Install Kubernetes Components
       block:
-        - name: Install apt-transport-https and ca-certificates
-          apt:
-            name:
-              - apt-transport-https
-              - ca-certificates
-            state: present
-            update_cache: yes
-
         - name: Add Kubernetes GPG key
-          become: yes
-          block:
-            - name: Create /etc/apt/keyrings directory
-              file:
-                path: /etc/apt/keyrings
-                state: directory
-                mode: '0755'
+          apt_key:
+            url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+            state: present
 
-            - name: Add Kubernetes GPG key to keyring
-              ansible.builtin.shell: |
-                curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --yes --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
-
-            - name: Add Kubernetes repository
-              apt_repository:
-                repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
-                filename: 'kubernetes.list'
-                state: present
-                update_cache: yes
-
-        - name: Unhold Kubernetes packages if they are held
-          dpkg_selections:
-            name: "{{ item }}"
-            selection: install
-          loop:
-            - kubelet
-            - kubeadm
-            - kubectl
+        - name: Add Kubernetes apt repository
+          apt_repository:
+            repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
+            state: present
 
         - name: Install Kubernetes packages
           apt:
             name:
-              - docker.io
-              - containerd
-              - kubelet={{ kubernetes_version }}-00
-              - kubeadm={{ kubernetes_version }}-00
-              - kubectl={{ kubernetes_version }}-00
+              - "kubelet={{ kubernetes_version }}-00"
+              - "kubeadm={{ kubernetes_version }}-00"
+              - "kubectl={{ kubernetes_version }}-00"
               - kubernetes-cni
+            update_cache: yes
             state: present
 
         - name: Hold Kubernetes packages
-          dpkg_selections:
-            name: "{{ item }}"
-            selection: hold
-          loop:
-            - kubelet
-            - kubeadm
-            - kubectl
+          command: apt-mark hold kubelet kubeadm kubectl
 
     - name: Install containerd 1.6
       block:
-        - name: Ensure /etc/containerd directory exists
-          file:
-            path: /etc/containerd
-            state: directory
-            mode: '0755'
-
-        - name: Download containerd
+        - name: Download containerd 1.6
           get_url:
-            url: "https://github.com/containerd/containerd/releases/download/v1.6.12/containerd-1.6.12-linux-amd64.tar.gz"
-            dest: "/tmp/containerd-1.6.12-linux-amd64.tar.gz"
+            url: https://github.com/containerd/containerd/releases/download/v1.6.12/containerd-1.6.12-linux-amd64.tar.gz
+            dest: /tmp/containerd-1.6.12-linux-amd64.tar.gz
 
-        - name: Extract containerd
+        - name: Extract containerd archive
           unarchive:
-            src: "/tmp/containerd-1.6.12-linux-amd64.tar.gz"
-            dest: "/tmp/"
+            src: /tmp/containerd-1.6.12-linux-amd64.tar.gz
+            dest: /usr/bin/
             remote_src: yes
 
-        - name: Copy containerd configuration file
-          template:
-            src: containerd-config.toml.j2
-            dest: /etc/containerd/config.toml
-
-        - name: Stop containerd service
+        - name: Start containerd service
           systemd:
             name: containerd
-            state: stopped
-
-        - name: Move containerd binaries
-          command: mv /tmp/bin/* /usr/bin/
-          args:
-            creates: "/usr/bin/containerd"
-
-        - name: Remove downloaded and extracted files
-          file:
-            path: "{{ item }}"
-            state: absent
-          loop:
-            - "/tmp/containerd-1.6.12-linux-amd64.tar.gz"
-            - "/tmp/bin"
-
-        - name: Start and enable containerd
-          systemd:
-            name: containerd
-            enabled: yes
             state: started
+            enabled: yes
 
-    - name: Configure containerd
+    - name: Containerd Setup
       block:
+        - name: Load overlay module
+          modprobe:
+            name: overlay
+            state: present
+
         - name: Load br_netfilter module
           modprobe:
             name: br_netfilter
             state: present
 
-
-        - name: Set sysctl parameters
+        - name: Apply sysctl settings for Kubernetes
           sysctl:
             name: "{{ item.key }}"
             value: "{{ item.value }}"
-            sysctl_set: yes
             state: present
             reload: yes
           loop:
             - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
             - { key: 'net.ipv4.ip_forward', value: '1' }
             - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
-
-        - name: Create containerd configuration file
-          template:
-            src: containerd-config.toml.j2
-            dest: /etc/containerd/config.toml
 
     - name: Configure crictl to use containerd
       copy:
@@ -264,183 +167,104 @@
         dest: /etc/crictl.yaml
 
     - name: Configure kubelet to use containerd
-      copy:
-        content: |
-          KUBELET_EXTRA_ARGS="--container-runtime-endpoint unix:///run/containerd/containerd.sock"
-        dest: /etc/default/kubelet
+      lineinfile:
+        path: /etc/default/kubelet
+        line: 'KUBELET_EXTRA_ARGS="--container-runtime-endpoint unix:///run/containerd/containerd.sock"'
 
-    - name: Enable and start kubelet
+    - name: Enable and Start Services
       systemd:
-        name: kubelet
-        enabled: yes
+        name: "{{ item }}"
         state: started
+        enabled: yes
+      loop:
+        - containerd
+        - kubelet
 
-    - name: Create Kubeadm Config for HA Setup
+    - name: Load Balancer Configuration for HA setup
+      set_fact:
+        load_balancer_dns: "api-server.devops.tbc"
+        load_balancer_port: 6443
+
+    - name: Kubeadm Config for HA Setup
       copy:
-        dest: /etc/kubernetes/kubeadm-config.yaml
         content: |
           apiVersion: kubeadm.k8s.io/v1beta2
           kind: ClusterConfiguration
-          kubernetesVersion: "{{ kubernetes_version }}"
+          kubernetesVersion: {{ kubernetes_version }}
           controlPlaneEndpoint: "{{ load_balancer_dns }}:{{ load_balancer_port }}"
           networking:
-            podSubnet: "{{ pod_subnet }}"
-      when: inventory_hostname == "master01"
+            podSubnet: 192.168.0.0/16
+        dest: /etc/kubernetes/kubeadm-config.yaml
 
-    # - name: Initialize Kubernetes cluster
-    #   shell: >
-    #       kubeadm init
-    #       --kubernetes-version {{ kubernetes_version }}
-    #       --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
-    #       --upload-certs
-    #       --apiserver-advertise-address {{ apiserver_advertise_address }}
-    #       --pod-network-cidr {{ pod_subnet }}
-    #   register: init_output
-    #   when: inventory_hostname == "master01"
-    #   changed_when: "'Your Kubernetes control-plane has initialized successfully!' in init_output.stdout"
+    - name: Initialize the First Master Node
+      command: >
+        kubeadm init --kubernetes-version={{ kubernetes_version }} --ignore-preflight-errors=NumCPU
+        --control-plane-endpoint="{{ load_balancer_dns }}:{{ load_balancer_port }}" --upload-certs
+        --apiserver-advertise-address={{ apiserver_advertise_address }} --pod-network-cidr=192.168.0.0/16
+      register: kubeadm_init
 
-    - name: Initialize Kubernetes cluster
-      block:
-        - name: Initialize Kubernetes cluster
-          command: >
-            kubeadm init
-            --kubernetes-version {{ kubernetes_version }}
-            --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
-            --upload-certs
-            --apiserver-advertise-address {{ apiserver_advertise_address }}
-            --pod-network-cidr {{ pod_subnet }}
-          register: init_output
-          when: inventory_hostname == "master01"
-          changed_when: false
-
-    - name: Store join commands in local file
-      block:
-        - name: Create tmp directory
-          file:
-            path: "$HOME/tmp"
-            state: directory
-            mode: '0755'
-        - name: Store join commands in local file
-          copy:
-            content: "{{ init_output.stdout }}"
-            dest: "$HOME/tmp/kube_join_commands"
-          when: inventory_hostname == "master01"
-          delegate_to: localhost
-
-    - name: Debug init output
-      debug:
-        var: init_output.stdout
-      when: inventory_hostname == "master01"
-
-    # - name: Capture master and worker join commands
-    #   set_fact:
-    #     join_command_master: "{{ init_output.stdout | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
-    #     join_command_worker: "{{ init_output.stdout | regex_search('kubeadm join .+\\n') }}"
-    #   when: inventory_hostname == "master01"
-
-    - name: Generate kubelet config file
-      shell: kubeadm config print init-defaults --component-configs KubeletConfiguration > /var/lib/kubelet/config.yaml
-      args:
-        executable: /bin/bash
-      become: yes
-
-    - name: Set permissions for kubelet config file
-      file:
-        path: /var/lib/kubelet/config.yaml
-        owner: root
-        group: root
-        mode: '0644'
-      become: yes
-
-    - name: Restart kubelet service
-      systemd:
-        name: kubelet
-        state: restarted
-      become: yes
-
-    - name: Join other master nodes to the cluster
-      command: "{{ lookup('file', '$HOME/tmp/kube_join_commands') | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
-      when: inventory_hostname != "master01" and inventory_hostname in groups['masters']
-      delegate_to: "{{ inventory_hostname }}"
-
-    # - name: Join other master nodes to the cluster
-    #   command: "{{ hostvars['master01'].join_command_master }}"
-    #   when: inventory_hostname != "master01" and hostvars['master01'].join_command_master is defined
-
-    - name: Setup kubeconfig and apply CNI Plugin on the first master
+    - name: Setup kubeconfig for local use
       block:
         - name: Create .kube directory
           file:
-            path: "$HOME/.kube"
+            path: $HOME/.kube
             state: directory
-            mode: '0755'
-
-        - name: Extract Kubernetes API Server's Certificate
-          shell: |
-            APISERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
-            APISERVER_CERT=$(openssl s_client -connect ${APISERVER#https://} </dev/null 2>/dev/null | openssl x509 -outform PEM)
-            echo "${APISERVER_CERT}" | sudo tee /usr/local/share/ca-certificates/kubernetes.crt
-          when: inventory_hostname == "master01"
-
-        - name: Update CA Certificates
-          command: sudo update-ca-certificates
-          when: inventory_hostname == "master01"
-
-        - name: Join other master nodes to the cluster
-          command: "{{ join_command_master }}"
-          when: inventory_hostname != "master01" and join_command_master is defined
-
-        # - name: Join other master nodes to the cluster
-        #   command: >
-        #     kubeadm join {{ load_balancer_dns }}:{{ load_balancer_port }}
-        #     --token your_token
-        #     --discovery-token-ca-cert-hash sha256:your_hash
-        #     --control-plane
-        #     --certificate-key your_certificate_key
-        #   when: inventory_hostname != "master01"
 
         - name: Copy admin.conf to user's kube config
           copy:
-            src: "/etc/kubernetes/admin.conf"
-            dest: "$HOME/.kube/config"
+            src: /etc/kubernetes/admin.conf
+            dest: $HOME/.kube/config
             remote_src: yes
-            mode: '0644'
+          become_user: "{{ ansible_env.SUDO_USER | default(ansible_env.USER) }}"
 
-        - name: Apply Calico CNI Plugin
-          command: "kubectl apply -f https://github.com/kapalevan/Kubernetes/raw/main/k8s/multi-node-ha-cluster/master-nodes/yaml-manifests/cni/calico/calico.yaml"
-      when: inventory_hostname == "master01"
+    - name: Extract Kubernetes API server's certificate
+      block:
+        - name: Get API server address
+          command: kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'
+          register: apiserver_address
 
-    - name: Debug kubernetes_version
-      ansible.builtin.debug:
-        var: kubernetes_version
+        - name: Extract and add API server's certificate
+          command: openssl s_client -connect {{ apiserver_address.stdout.split('/')[2] }} </dev/null 2>/dev/null | openssl x509 -outform PEM
+          register: apiserver_cert
+
+        - name: Add certificate to system's trusted CA store
+          copy:
+            content: "{{ apiserver_cert.stdout }}"
+            dest: /usr/local/share/ca-certificates/kubernetes.crt
+          notify: Update CA certificates
+
+    - name: Apply CNI Plugin
+      command: kubectl apply -f https://github.com/kapalevan/Kubernetes/raw/main/k8s/multi-node-ha-cluster/master-nodes/yaml-manifests/cni/calico/calico.yaml
 
     - name: Setup etcdctl
       block:
-        - name: Get architecture using dpkg
-          ansible.builtin.command: dpkg --print-architecture
-          register: dpkg_architecture
-          changed_when: false
-
         - name: Download etcdctl
-          ansible.builtin.get_url:
-            url: "https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
-            dest: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
-          vars:
-            etcdctl_version: "v3.5.1"
+          get_url:
+            url: https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz
+            dest: /tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz
 
         - name: Extract etcdctl
-          ansible.builtin.unarchive:
-            src: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
-            dest: "/tmp/"
+          unarchive:
+            src: /tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz
+            dest: /usr/bin/
             remote_src: yes
-            extra_opts: ["--strip-components=1"]
 
-        - name: Move etcdctl to /usr/bin
-          ansible.builtin.command:
-            cmd: mv /tmp/etcdctl /usr/bin/
-            creates: "/usr/bin/etcdctl"
+    - name: Display command for joining other master nodes
+      command: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
+      register: master_join_command
 
-        - name: Cleanup downloaded files
-          ansible.builtin.file:
-            path: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
-            state: absent
+    - name: Show master node join command
+      debug:
+        msg: "{{ master_join_command.stdout }}"
+
+    - name: Command to add a worker node
+      command: kubeadm token create --print-join-command --ttl 0
+      register: worker_join_command
+
+    - name: Show worker node join command
+      debug:
+        msg: "{{ worker_join_command.stdout }}"
+
+  handlers:
+    - name: Update CA certificates
+      command: update-ca-certificates
