@@ -325,30 +325,33 @@
       when: inventory_hostname == "master01"
 
     - name: Setup etcdctl
-      block:
+      hosts: all
+      tasks:
+        - name: Get architecture using dpkg
+          command: dpkg --print-architecture
+          register: dpkg_architecture
+          changed_when: false
+
         - name: Download etcdctl
           get_url:
-            url: "https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz"
-            dest: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz"
+            url: "https://github.com/etcd-io/etcd/releases/download/{{ etcdctl_version }}/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
+            dest: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
           vars:
             etcdctl_version: "v3.5.1"
 
         - name: Extract etcdctl
-          command:
-            cmd: tar xzf /tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz -C /tmp/ etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}/etcdctl
-          args:
-            creates: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}/etcdctl"
+          unarchive:
+            src: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
+            dest: "/tmp/"
+            remote_src: yes
+            extra_opts: ["--strip-components=1"]
 
         - name: Move etcdctl to /usr/bin
-          command:
-            cmd: mv /tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}/etcdctl /usr/bin/
+          command: mv /tmp/etcdctl /usr/bin/
           args:
             creates: "/usr/bin/etcdctl"
 
         - name: Cleanup downloaded files
           file:
-            path: "{{ item }}"
+            path: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
             state: absent
-          loop:
-            - "/tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}.tar.gz"
-            - "/tmp/etcd-{{ etcdctl_version }}-linux-{{ ansible_architecture }}"
