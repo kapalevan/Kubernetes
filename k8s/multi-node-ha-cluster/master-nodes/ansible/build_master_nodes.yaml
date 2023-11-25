@@ -346,7 +346,6 @@
 
         - name: Copy admin.conf to user's kube config
           copy:
-
             src: "/etc/kubernetes/admin.conf"
             dest: "$HOME/.kube/config"
             remote_src: yes
