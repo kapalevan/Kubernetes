@@ -312,6 +312,30 @@
             join_command_worker: "{{ init_output.stdout | regex_search('kubeadm join .+\\n') }}"
           when: inventory_hostname == "master01"
 
+    - name: Generate kubelet config file
+      command: kubeadm config print kubelet > /var/lib/kubelet/config.yaml
+      when: inventory_hostname != "master01"
+
+    - name: Template kubelet config file
+      template:
+        src: kubelet-config.yaml.j2
+        dest: /var/lib/kubelet/config.yaml
+      when: inventory_hostname != "master01"
+
+    - name: Set permissions for kubelet config file
+      file:
+        path: /var/lib/kubelet/config.yaml
+        owner: root
+        group: root
+        mode: '0644'
+      when: inventory_hostname != "master01"
+
+    - name: Restart kubelet service
+      systemd:
+        name: kubelet
+        state: restarted
+      when: inventory_hostname != "master01"
+
     - name: Join other master nodes to the cluster
       command: "{{ hostvars['master01'].join_command_master }}"
       when: inventory_hostname != "master01" and hostvars['master01'].join_command_master is defined
