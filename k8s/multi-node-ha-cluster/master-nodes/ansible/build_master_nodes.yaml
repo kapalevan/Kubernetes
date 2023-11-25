@@ -124,70 +124,95 @@
         - name: Hold Kubernetes packages
           command: apt-mark hold kubelet kubeadm kubectl
 
-    - name: Install containerd 1.6
-      block:
-        - name: Download containerd 1.6
-          get_url:
-            url: https://github.com/containerd/containerd/releases/download/v1.6.12/containerd-1.6.12-linux-amd64.tar.gz
-            dest: /tmp/containerd-1.6.12-linux-amd64.tar.gz
+        - name: Install containerd 1.6
+          block:
+            - name: Ensure /etc/containerd directory exists
+              file:
+                path: /etc/containerd
+                state: directory
+                mode: '0755'
 
-        - name: Extract containerd archive
-          unarchive:
-            src: /tmp/containerd-1.6.12-linux-amd64.tar.gz
-            dest: /usr/bin/
-            remote_src: yes
+            - name: Download containerd
+              get_url:
+                url: "https://github.com/containerd/containerd/releases/download/v1.6.12/containerd-1.6.12-linux-amd64.tar.gz"
+                dest: "/tmp/containerd-1.6.12-linux-amd64.tar.gz"
 
-        - name: Unmask containerd service
-          command: systemctl unmask containerd
+            - name: Extract containerd
+              unarchive:
+                src: "/tmp/containerd-1.6.12-linux-amd64.tar.gz"
+                dest: "/tmp/"
+                remote_src: yes
 
-        - name: Start containerd service
+            - name: Copy containerd configuration file
+              template:
+                src: containerd-config.toml.j2
+                dest: /etc/containerd/config.toml
+
+            - name: Stop containerd service
+              systemd:
+                name: containerd
+                state: stopped
+
+            - name: Move containerd binaries
+              command: mv /tmp/bin/* /usr/bin/
+              args:
+                creates: "/usr/bin/containerd"
+
+            - name: Remove downloaded and extracted files
+              file:
+                path: "{{ item }}"
+                state: absent
+              loop:
+                - "/tmp/containerd-1.6.12-linux-amd64.tar.gz"
+                - "/tmp/bin"
+
+            - name: Start and enable containerd
+              systemd:
+                name: containerd
+                enabled: yes
+                state: started
+
+        - name: Configure containerd
+          block:
+            - name: Load br_netfilter module
+              modprobe:
+                name: br_netfilter
+                state: present
+
+            - name: Set sysctl parameters
+              sysctl:
+                name: "{{ item.key }}"
+                value: "{{ item.value }}"
+                sysctl_set: yes
+                state: present
+                reload: yes
+              loop:
+                - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+                - { key: 'net.ipv4.ip_forward', value: '1' }
+                - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+
+            - name: Create containerd configuration file
+              template:
+                src: containerd-config.toml.j2
+                dest: /etc/containerd/config.toml
+
+        - name: Configure crictl to use containerd
+          copy:
+            content: |
+              runtime-endpoint: unix:///run/containerd/containerd.sock
+            dest: /etc/crictl.yaml
+
+        - name: Configure kubelet to use containerd
+          copy:
+            content: |
+              KUBELET_EXTRA_ARGS="--container-runtime-endpoint unix:///run/containerd/containerd.sock"
+            dest: /etc/default/kubelet
+
+        - name: Enable and start kubelet
           systemd:
-            name: containerd
-            state: started
+            name: kubelet
             enabled: yes
-
-    - name: Containerd Setup
-      block:
-        - name: Load overlay module
-          modprobe:
-            name: overlay
-            state: present
-
-        - name: Load br_netfilter module
-          modprobe:
-            name: br_netfilter
-            state: present
-
-        - name: Apply sysctl settings for Kubernetes
-          sysctl:
-            name: "{{ item.key }}"
-            value: "{{ item.value }}"
-            state: present
-            reload: yes
-          loop:
-            - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
-            - { key: 'net.ipv4.ip_forward', value: '1' }
-            - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
-
-    - name: Configure crictl to use containerd
-      copy:
-        content: |
-          runtime-endpoint: unix:///run/containerd/containerd.sock
-        dest: /etc/crictl.yaml
-
-    - name: Configure kubelet to use containerd
-      lineinfile:
-        path: /etc/default/kubelet
-        line: 'KUBELET_EXTRA_ARGS="--container-runtime-endpoint unix:///run/containerd/containerd.sock"'
-
-    - name: Enable and Start Services
-      systemd:
-        name: "{{ item }}"
-        state: started
-        enabled: yes
-      loop:
-        - containerd
-        - kubelet
+            state: started
 
     - name: Load Balancer Configuration for HA setup
       set_fact:
