@@ -3,3 +3,4 @@ load_balancer_dns: "api-server.devops.tbc"
 load_balancer_port: 6443
 pod_subnet: "192.168.0.0/16"
 apiserver_advertise_address: "3.9.3.151"
+etcdctl_version: "v3.5.1"
