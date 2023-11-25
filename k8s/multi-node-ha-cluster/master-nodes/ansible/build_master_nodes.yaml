@@ -300,11 +300,20 @@
             --pod-network-cidr {{ pod_subnet }}
           register: init_output
           when: inventory_hostname == "master01"
-          changed_when: false
+
+        - name: Debug init output
+          debug:
+            var: init_output
+          when: inventory_hostname == "master01"
           
         - name: Extract and save certificate key
           shell: kubeadm init phase upload-certs --upload-certs
           register: certificate_key
+          when: inventory_hostname == "master01" and init_output is changed
+
+        - name: Debug certificate key
+          debug:
+            var: certificate_key
           when: inventory_hostname == "master01" and init_output is changed
 
         - name: Capture master node join command
