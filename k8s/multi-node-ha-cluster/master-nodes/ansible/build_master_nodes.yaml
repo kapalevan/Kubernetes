@@ -322,20 +322,38 @@
       failed_when: kubeadm_init.rc != 0
       when: inventory_hostname == 'master01'
 
+    - name: Check if kubeadm is installed
+      command: which kubeadm
+      register: kubeadm_path
+      ignore_errors: yes
+
+    - name: Fail if kubeadm is not installed
+      fail:
+        msg: "kubeadm not found in path"
+      when: kubeadm_path.rc != 0
+
     - name: Store join commands in local file
       delegate_to: localhost
       run_once: true
       block:
+        # - name: Capture master join command
+        #   become: yes
+        #   shell: |
+        #     export PATH=$PATH:/path/to/kubeadm # Replace with actual path if necessary
+        #     kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
+        #   register: master_join_command
+        #   delegate_to: localhost
+        #   when: kubeadm_init is succeeded and inventory_hostname == 'master01'
+        #   ignore_errors: yes
         - name: Capture master join command
-          become: yes
           shell: |
-            export PATH=$PATH:/path/to/kubeadm # Replace with actual path if necessary
             kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
-          register: master_join_command
-          delegate_to: localhost
-          when: kubeadm_init is succeeded and inventory_hostname == 'master01'
-          ignore_errors: yes
+          register: join_command
+          args:
+            executable: /bin/bash
 
+          environment:
+            PATH: "/path/to/kubeadm:$PATH"
 
         - name: Capture worker join command
           command: kubeadm token create --print-join-command --ttl 0
