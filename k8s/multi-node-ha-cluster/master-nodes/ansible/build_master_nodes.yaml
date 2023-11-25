@@ -198,10 +198,33 @@
 
     - name: Initialize the First Master Node
       command: >
-        kubeadm init --kubernetes-version={{ kubernetes_version }} --ignore-preflight-errors=NumCPU
-        --control-plane-endpoint="{{ load_balancer_dns }}:{{ load_balancer_port }}" --upload-certs
-        --apiserver-advertise-address={{ apiserver_advertise_address }} --pod-network-cidr=192.168.0.0/16
+        kubeadm init --kubernetes-version={{ kubernetes_version }}
+        --ignore-preflight-errors=NumCPU --control-plane-endpoint="{{ load_balancer_dns }}:{{ load_balancer_port }}"
+        --upload-certs --apiserver-advertise-address={{ apiserver_advertise_address }}
+        --pod-network-cidr=192.168.0.0/16
       register: kubeadm_init
+      failed_when: kubeadm_init.rc != 0
+      when: inventory_hostname == 'master01'
+
+    - name: Store join commands in local file
+      delegate_to: localhost
+      run_once: true
+      block:
+        - name: Capture master join command
+          command: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
+          register: master_join_command
+
+        - name: Capture worker join command
+          command: kubeadm token create --print-join-command --ttl 0
+          register: worker_join_command
+
+        - name: Save join commands to file
+          copy:
+            content: |
+              {{ master_join_command.stdout }}
+              {{ worker_join_command.stdout }}
+            dest: /tmp/ansibletmp/join_command.yaml
+      when: kubeadm_init is succeeded and inventory_hostname == 'master01'
 
     - name: Setup kubeconfig for local use
       block:
