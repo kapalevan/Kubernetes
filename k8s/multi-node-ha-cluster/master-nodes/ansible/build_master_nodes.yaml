@@ -94,28 +94,38 @@
           registries = ['docker.io']
         dest: /etc/containers/registries.conf
 
-    - name: Add Kubernetes Repository and Install Components
-      block:
-        - name: Add Kubernetes GPG key
-          apt_key:
-            url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
-            state: present
+    - name: Add Kubernetes GPG key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
 
-        - name: Add Kubernetes repository
-          apt_repository:
-            repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
-            filename: 'kubernetes.list'
+    - name: Add Kubernetes repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
+        filename: 'kubernetes.list'
+        state: present
+        update_cache: yes
 
-        - name: Install Kubernetes Components
-          apt:
-            name:
-              - docker.io
-              - containerd
-              - kubelet={{ kubernetes_version }}-00
-              - kubeadm={{ kubernetes_version }}-00
-              - kubectl={{ kubernetes_version }}-00
-              - kubernetes-cni
-            state: present
+    - name: Unhold Kubernetes packages if they are held
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: install
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Install Kubernetes packages
+      apt:
+        name:
+          - docker.io
+          - containerd
+          - kubelet={{ kubernetes_version }}-00
+          - kubeadm={{ kubernetes_version }}-00
+          - kubectl={{ kubernetes_version }}-00
+          - kubernetes-cni
+        state: present
+        update_cache: yes
 
     - name: Hold Kubernetes packages
       dpkg_selections:
