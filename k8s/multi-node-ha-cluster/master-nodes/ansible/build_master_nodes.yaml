@@ -346,15 +346,15 @@
 
         - name: Get join command from master01
           fetch:
-            src: "/tmp/oin_master_nodes.sh"
-            dest: "/tmp/oin_master_nodes.sh"
+            src: "/tmp/join_master_nodes.sh"
+            dest: "/tmp/join_master_nodes.sh"
             flat: yes
           when: inventory_hostname == "master01"
 
         - name: Copy join file to master nodes
           copy:
-            src: "/tmp/oin_master_nodes.sh"
-            dest: "/tmp/oin_master_nodes.sh"
+            src: "/tmp/join_master_nodes.sh"
+            dest: "/tmp/join_master_nodes.sh"
           when: inventory_hostname != "master01"
 
         # - name: Debug init output
