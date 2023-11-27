@@ -342,7 +342,8 @@
           file:
             path: "/tmp/cluster_initialized.info"
             state: absent
-            
+          when: inventory_hostname == "master01"
+
         # - name: Debug init output
         #   debug:
         #     var: init_output
