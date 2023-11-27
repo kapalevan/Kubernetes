@@ -315,34 +315,15 @@
 
         - name: Extract and write join command for master nodes
           shell: >
-            cat /tmp/cluster_initialized.info | grep -Pzo "kubeadm join.*?\\n.*?\\n.*?\\n.*?--control-plane.*?\\n" | tr -d '\\\n' > /tmp/join_master_nodes.sh
+            awk '/kubeadm join/{flag=1;next}/--control-plane/{flag=0}flag; /--control-plane/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_master_nodes.sh
           args:
             executable: /bin/bash
 
-        # - name: Extract and write join command for worker nodes
-        #   shell: >
-        #     cat /tmp/cluster_initialized.info | grep -Pzo "kubeadm join.*?\\n.*?\\n.*?(?!--control-plane)" | tr -d '\\\n' > /tmp/join_worker_nodes.sh
-        #   args:
-        #     executable: /bin/bash
-
-        # - name: Extract join command for master nodes
-        #   lineinfile:
-        #     path: "/tmp/join_master_nodes.sh"
-        #     line: "{{ item }}"
-        #     create: yes
-        #   with_items: "{{ lookup('file', '/tmp/join_masters.sh').splitlines() }}"
-        #   when: item is search('kubeadm join.*--control-plane')
-        #   register: join_master_command
-
-        # - name: Extract join command for worker nodes
-        #   lineinfile:
-        #     path: "/tmp/join_worker_nodes.sh"
-        #     line: "{{ item }}"
-        #     create: yes
-        #   with_items: "{{ lookup('file', '/tmp/join_masters.sh').splitlines() }}"
-        #   when: item is search('kubeadm join') and not item is search('--control-plane')
-        #   register: join_worker_command
-
+        - name: Extract and write join command for worker nodes
+          shell: >
+            awk '/kubeadm join/{flag=1;next}/--discovery-token-ca-cert-hash/{flag=0}flag; /--discovery-token-ca-cert-hash/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_worker_nodes.sh
+          args:
+            executable: /bin/bash
 
         - name: Get join command from master01
           fetch:
@@ -357,6 +338,11 @@
             dest: "/tmp/join_master_nodes.sh"
           when: inventory_hostname != "master01"
 
+        - name: Delete cluster_initialized.info file
+          file:
+            path: "/tmp/cluster_initialized.info"
+            state: absent
+            
         # - name: Debug init output
         #   debug:
         #     var: init_output
