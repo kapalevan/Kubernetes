@@ -288,17 +288,29 @@
         dest: /etc/kubernetes/kubeadm-config.yaml
       when: inventory_hostname == "master01"
 
+    # - name: Initialize Kubernetes cluster
+    #   block:
+    #     - name: Initialize Kubernetes cluster on master01
+    #       command: >
+    #         kubeadm init
+    #         --kubernetes-version {{ kubernetes_version }}
+    #         --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
+    #         --upload-certs
+    #         --apiserver-advertise-address {{ apiserver_advertise_address }}
+    #         --pod-network-cidr {{ pod_subnet }} >> /tmp/join_masters.sh
+    #       # register: init_output
+    #       when: inventory_hostname == "master01"
+
     - name: Initialize Kubernetes cluster
       block:
         - name: Initialize Kubernetes cluster on master01
-          command: >
+          shell: >
             kubeadm init
             --kubernetes-version {{ kubernetes_version }}
             --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
             --upload-certs
             --apiserver-advertise-address {{ apiserver_advertise_address }}
             --pod-network-cidr {{ pod_subnet }} >> /tmp/join_masters.sh
-          # register: init_output
           when: inventory_hostname == "master01"
 
         - name: Get join command from master01
