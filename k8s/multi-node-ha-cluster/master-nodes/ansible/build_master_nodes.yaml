@@ -318,12 +318,14 @@
             awk '/kubeadm join/{flag=1}/--control-plane/{flag=0}flag; /--control-plane/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_master_nodes.sh
           args:
             executable: /bin/bash
+          when: inventory_hostname == "master01"
 
         - name: Extract and write join command for worker nodes
           shell: >
             awk '/kubeadm join/{flag=1}/--discovery-token-ca-cert-hash/{flag=0}flag; /--discovery-token-ca-cert-hash/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_worker_nodes.sh
           args:
             executable: /bin/bash
+          when: inventory_hostname == "master01"
 
         - name: Get join command from master01
           fetch:
@@ -357,7 +359,7 @@
         - name: Debug certificate key output
           debug:
             var: upload_certs_output.stdout_lines
-          when: inventory_hostname == "master01" and init_output is changed
+          # when: inventory_hostname == "master01" and init_output is changed
 
     - name:
       file:
