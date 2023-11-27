@@ -362,14 +362,14 @@
         #     var: init_output
         #   when: inventory_hostname == "master01"
           
-        # - name: Extract and save certificate key
-        #   shell: kubeadm init phase upload-certs --upload-certs
-        #   register: upload_certs_output
-        #   when: inventory_hostname == "master01"
+        - name: Extract and save certificate key
+          shell: kubeadm init phase upload-certs --upload-certs
+          register: upload_certs_output
+          when: inventory_hostname == "master01"
 
-        # - name: Debug certificate key output
-        #   debug:
-        #     var: upload_certs_output.stdout_lines
+        - name: Debug certificate key output
+          debug:
+            var: upload_certs_output.stdout_lines
             
         #   when: inventory_hostname == "master01" and init_output is changed
 
