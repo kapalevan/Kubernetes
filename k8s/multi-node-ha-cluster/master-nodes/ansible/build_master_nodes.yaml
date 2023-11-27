@@ -315,13 +315,13 @@
 
         - name: Extract and write join command for master nodes
           shell: >
-            awk '/kubeadm join/{flag=1;next}/--control-plane/{flag=0}flag; /--control-plane/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_master_nodes.sh
+            awk '/kubeadm join/{flag=1}/--control-plane/{flag=0}flag; /--control-plane/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_master_nodes.sh
           args:
             executable: /bin/bash
 
         - name: Extract and write join command for worker nodes
           shell: >
-            awk '/kubeadm join/{flag=1;next}/--discovery-token-ca-cert-hash/{flag=0}flag; /--discovery-token-ca-cert-hash/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_worker_nodes.sh
+            awk '/kubeadm join/{flag=1}/--discovery-token-ca-cert-hash/{flag=0}flag; /--discovery-token-ca-cert-hash/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_worker_nodes.sh
           args:
             executable: /bin/bash
 
@@ -338,11 +338,11 @@
             dest: "/tmp/join_master_nodes.sh"
           when: inventory_hostname != "master01"
 
-        - name: Delete cluster_initialized.info file
-          file:
-            path: "/tmp/cluster_initialized.info"
-            state: absent
-          when: inventory_hostname == "master01"
+        # - name: Delete cluster_initialized.info file
+        #   file:
+        #     path: "/tmp/cluster_initialized.info"
+        #     state: absent
+        #   when: inventory_hostname == "master01"
 
         # - name: Debug init output
         #   debug:
@@ -357,49 +357,19 @@
         - name: Debug certificate key output
           debug:
             var: upload_certs_output.stdout_lines
-            
-        #   when: inventory_hostname == "master01" and init_output is changed
+          when: inventory_hostname == "master01" and init_output is changed
 
-        # - name: Capture master node join command
-        #   shell: kubeadm token create --print-join-command --certificate-key {{ certificate_key.stdout }}
-        #   register: master_join_command
-        #   when: inventory_hostname == "master01" and certificate_key is defined
-
-
-    # - name: Capture master node join command
-    #   shell: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
-    #   register: master_join_command
-
-    # - name: Store join commands in local file
-    #   block:
-    #     - name: Create tmp directory
-    #       file:
-    #         path: "$HOME/tmp"
-    #         state: directory
-    #         mode: '0755'
-    #     - name: Store join commands in local file
-    #       copy:
-    #         content: "{{ init_output.stdout }}"
-    #         dest: "$HOME/tmp/kube_join_commands"
-    #       when: inventory_hostname == "master01"
-    #       delegate_to: localhost
-
-    # - name: Debug init output
-    #   debug:
-    #     var: init_output.stdout
-    #   when: inventory_hostname == "master01"
-  
-    # - name: Capture master and worker join commands
-    #   set_fact:
-    #     join_command_master: "{{ init_output.stdout | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
-    #     join_command_worker: "{{ init_output.stdout | regex_search('kubeadm join .+\\n') }}"
-    #   when: inventory_hostname == "master01"
+    - name:
+      file:
+        path: /var/lib/kubelet
+        state: directory
+        mode: '0755'
 
     - name: Generate kubelet config file
-      shell: kubeadm config print init-defaults --component-configs KubeletConfiguration > /var/lib/kubelet/config.yaml
+      shell: |
+        kubeadm config print init-defaults --component-configs KubeletConfiguration > /var/lib/kubelet/config.yaml
       args:
         executable: /bin/bash
-      become: yes
 
     - name: Set permissions for kubelet config file
       file:
@@ -407,20 +377,12 @@
         owner: root
         group: root
         mode: '0644'
-      become: yes
 
     - name: Restart kubelet service
       systemd:
         name: kubelet
         state: restarted
-      become: yes
 
-    # - name: Join other master nodes to the cluster
-    #   command: "{{ lookup('file', '$HOME/tmp/kube_join_commands') | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
-    #   when: inventory_hostname != "master01" and inventory_hostname in groups['masters']
-    #   delegate_to: "{{ inventory_hostname }}"
-
-    
     - name: Setup kubeconfig and apply CNI Plugin on the first master
       block:
         - name: Create .kube directory
