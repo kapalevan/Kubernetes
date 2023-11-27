@@ -310,20 +310,51 @@
             --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
             --upload-certs
             --apiserver-advertise-address {{ apiserver_advertise_address }}
-            --pod-network-cidr {{ pod_subnet }} >> /tmp/join_masters.sh
+            --pod-network-cidr {{ pod_subnet }} >> /tmp/cluster_initialized.info
           when: inventory_hostname == "master01"
+
+        - name: Extract and write join command for master nodes
+          shell: >
+            cat /tmp/cluster_initialized.info | grep -A 3 "kubeadm join.*--control-plane" | tr -d '\\\n' > /tmp/join_master_nodes.sh
+          args:
+            executable: /bin/bash
+
+        - name: Extract and write join command for worker nodes
+          shell: >
+            cat /tmp/cluster_initialized.info | grep -A 1 "kubeadm join" | grep -v "--control-plane" | tr -d '\\\n' > /tmp/join_worker_nodes.sh
+          args:
+            executable: /bin/bash
+
+        # - name: Extract join command for master nodes
+        #   lineinfile:
+        #     path: "/tmp/join_master_nodes.sh"
+        #     line: "{{ item }}"
+        #     create: yes
+        #   with_items: "{{ lookup('file', '/tmp/join_masters.sh').splitlines() }}"
+        #   when: item is search('kubeadm join.*--control-plane')
+        #   register: join_master_command
+
+        # - name: Extract join command for worker nodes
+        #   lineinfile:
+        #     path: "/tmp/join_worker_nodes.sh"
+        #     line: "{{ item }}"
+        #     create: yes
+        #   with_items: "{{ lookup('file', '/tmp/join_masters.sh').splitlines() }}"
+        #   when: item is search('kubeadm join') and not item is search('--control-plane')
+        #   register: join_worker_command
+
 
         - name: Get join command from master01
           fetch:
-            src: "/tmp/join_masters.sh"
-            dest: "/tmp/join_masters.sh"
+            src: "/tmp/oin_master_nodes.sh"
+            dest: "/tmp/oin_master_nodes.sh"
             flat: yes
           when: inventory_hostname == "master01"
 
         - name: Copy join file to master nodes
           copy:
-            src: "/tmp/join_masters.sh"
-            dest: "/tmp/join_masters.sh"
+            src: "/tmp/oin_master_nodes.sh"
+            dest: "/tmp/oin_master_nodes.sh"
           when: inventory_hostname != "master01"
 
         # - name: Debug init output
