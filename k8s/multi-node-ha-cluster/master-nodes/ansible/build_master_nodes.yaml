@@ -297,35 +297,48 @@
             --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
             --upload-certs
             --apiserver-advertise-address {{ apiserver_advertise_address }}
-            --pod-network-cidr {{ pod_subnet }}
-          register: init_output
+            --pod-network-cidr {{ pod_subnet }} >> /tmp/join_masters.sh
+          # register: init_output
           when: inventory_hostname == "master01"
 
-        - name: Debug init output
-          debug:
-            var: init_output
+        - name: Get join command from master01
+          fetch:
+            src: "/tmp/join_masters.sh"
+            dest: "/tmp/join_masters.sh"
+            flat: yes
           when: inventory_hostname == "master01"
+
+        - name: Copy join file to master nodes
+          copy:
+            src: "/tmp/join_masters.sh"
+            dest: "/tmp/join_masters.sh"
+          when: inventory_hostname != "master01"
+
+        # - name: Debug init output
+        #   debug:
+        #     var: init_output
+        #   when: inventory_hostname == "master01"
           
-        - name: Extract and save certificate key
-          shell: kubeadm init phase upload-certs --upload-certs
-          register: upload_certs_output
-          when: inventory_hostname == "master01"
+        # - name: Extract and save certificate key
+        #   shell: kubeadm init phase upload-certs --upload-certs
+        #   register: upload_certs_output
+        #   when: inventory_hostname == "master01"
 
-        - name: Debug certificate key output
-          debug:
-            var: upload_certs_output.stdout_lines
+        # - name: Debug certificate key output
+        #   debug:
+        #     var: upload_certs_output.stdout_lines
             
-          when: inventory_hostname == "master01" and init_output is changed
+        #   when: inventory_hostname == "master01" and init_output is changed
 
-        - name: Capture master node join command
-          shell: kubeadm token create --print-join-command --certificate-key {{ certificate_key.stdout }}
-          register: master_join_command
-          when: inventory_hostname == "master01" and certificate_key is defined
+        # - name: Capture master node join command
+        #   shell: kubeadm token create --print-join-command --certificate-key {{ certificate_key.stdout }}
+        #   register: master_join_command
+        #   when: inventory_hostname == "master01" and certificate_key is defined
 
 
-    - name: Capture master node join command
-      shell: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
-      register: master_join_command
+    # - name: Capture master node join command
+    #   shell: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
+    #   register: master_join_command
 
     # - name: Store join commands in local file
     #   block:
@@ -398,14 +411,14 @@
             certificate_key: "{{ upload_certs_output.stdout | regex_search('(b[0-9a-f]{64})') }}"
           when: inventory_hostname == "master01"
 
-        - name: Generate master node join command
-          shell: kubeadm token create --print-join-command --certificate-key {{ certificate_key }}
-          register: master_join_command
-          when: inventory_hostname == "master01"
+        # - name: Generate master node join command
+        #   shell: kubeadm token create --print-join-command --certificate-key {{ certificate_key }}
+        #   register: master_join_command
+        #   when: inventory_hostname == "master01"
 
-        - name: Debug master node join command
-          debug:
-            var: master_join_command.stdout
+        # - name: Debug master node join command
+        #   debug:
+        #     var: master_join_command.stdout
 
         # - name: Join other master nodes to the cluster
         #   command: >
