@@ -3,6 +3,7 @@
   vars_files:
     - vars.yaml
     - vault.yaml
+
   tasks:
     - name: Check Ubuntu Version
       fail:
@@ -41,7 +42,7 @@
           set tabstop=2
           set shiftwidth=2
           set expandtab
-
+        create: yes
     - name: Configure Bashrc for kubectl
       blockinfile:
         path: "~/.bashrc"
@@ -61,7 +62,7 @@
         regexp: '^([^#].*\sswap\s)'
         line: '#\1'
 
-    - name: Remove any existing Kubernetes installations
+    - name: Reset Kubernetes if installed
       block:
         - name: Reset kubeadm
           command: kubeadm reset -f
@@ -135,54 +136,55 @@
             state: present
             update_cache: yes
 
-        - name: Add Kubernetes GPG key
-          become: yes
-          block:
-            - name: Create /etc/apt/keyrings directory
-              file:
-                path: /etc/apt/keyrings
-                state: directory
-                mode: '0755'
+    - name: Add Kubernetes GPG key
+      become: yes
+      block:
+        - name: Create /etc/apt/keyrings directory
+          file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: '0755'
 
-            - name: Add Kubernetes GPG key to keyring
-              ansible.builtin.shell: |
+        - name: Add Kubernetes GPG key to keyring
+          ansible.builtin.shell: |
                 curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --yes --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
-            - name: Add Kubernetes repository
-              apt_repository:
-                repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
-                filename: 'kubernetes.list'
-                state: present
-                update_cache: yes
-
-        - name: Unhold Kubernetes packages if they are held
-          dpkg_selections:
-            name: "{{ item }}"
-            selection: install
-          loop:
-            - kubelet
-            - kubeadm
-            - kubectl
-
-        - name: Install Kubernetes packages
-          apt:
-            name:
-              - docker.io
-              - containerd
-              - kubelet={{ kubernetes_version }}-00
-              - kubeadm={{ kubernetes_version }}-00
-              - kubectl={{ kubernetes_version }}-00
-              - kubernetes-cni
+        - name: Add Kubernetes repository
+          apt_repository:
+            repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
+            filename: 'kubernetes.list'
             state: present
+            update_cache: yes
 
-        - name: Hold Kubernetes packages
-          dpkg_selections:
-            name: "{{ item }}"
-            selection: hold
-          loop:
-            - kubelet
-            - kubeadm
-            - kubectl
+    - name: Unhold Kubernetes packages if they are held
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: install
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Install Kubernetes packages
+      apt:
+        name:
+          - docker.io
+          - containerd
+          - kubelet={{ kubernetes_version }}-00
+          - kubeadm={{ kubernetes_version }}-00
+          - kubectl={{ kubernetes_version }}-00
+          - kubernetes-cni
+        state: present
+        update_cache: yes
+
+    - name: Hold Kubernetes packages
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
 
     - name: Install containerd 1.6
       block:
@@ -233,6 +235,11 @@
             state: started
 
     - name: Configure containerd
+      template:
+        src: containerd-config.toml.j2
+        dest: /etc/containerd/config.toml
+
+    - name: Configure Networking
       block:
         - name: Load br_netfilter module
           modprobe:
@@ -276,73 +283,95 @@
         state: started
 
     - name: Create Kubeadm Config for HA Setup
-      copy:
+      template:
+        src: kubeadm-config.yaml.j2
         dest: /etc/kubernetes/kubeadm-config.yaml
-        content: |
-          apiVersion: kubeadm.k8s.io/v1beta2
-          kind: ClusterConfiguration
-          kubernetesVersion: "{{ kubernetes_version }}"
-          controlPlaneEndpoint: "{{ load_balancer_dns }}:{{ load_balancer_port }}"
-          networking:
-            podSubnet: "{{ pod_subnet }}"
       when: inventory_hostname == "master01"
 
     # - name: Initialize Kubernetes cluster
-    #   shell: >
-    #       kubeadm init
-    #       --kubernetes-version {{ kubernetes_version }}
-    #       --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
-    #       --upload-certs
-    #       --apiserver-advertise-address {{ apiserver_advertise_address }}
-    #       --pod-network-cidr {{ pod_subnet }}
-    #   register: init_output
-    #   when: inventory_hostname == "master01"
-    #   changed_when: "'Your Kubernetes control-plane has initialized successfully!' in init_output.stdout"
+    #   block:
+    #     - name: Initialize Kubernetes cluster on master01
+    #       command: >
+    #         kubeadm init
+    #         --kubernetes-version {{ kubernetes_version }}
+    #         --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
+    #         --upload-certs
+    #         --apiserver-advertise-address {{ apiserver_advertise_address }}
+    #         --pod-network-cidr {{ pod_subnet }} >> /tmp/join_masters.sh
+    #       # register: init_output
+    #       when: inventory_hostname == "master01"
 
     - name: Initialize Kubernetes cluster
       block:
-        - name: Initialize Kubernetes cluster
-          command: >
+        - name: Initialize Kubernetes cluster on master01
+          shell: >
             kubeadm init
             --kubernetes-version {{ kubernetes_version }}
             --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
             --upload-certs
             --apiserver-advertise-address {{ apiserver_advertise_address }}
-            --pod-network-cidr {{ pod_subnet }}
-          register: init_output
+            --pod-network-cidr {{ pod_subnet }} >> /tmp/cluster_initialized.info
           when: inventory_hostname == "master01"
-          changed_when: false
 
-    - name: Store join commands in local file
-      block:
-        - name: Create tmp directory
-          file:
-            path: "$HOME/tmp"
-            state: directory
-            mode: '0755'
-        - name: Store join commands in local file
+        - name: Extract and write join command for master nodes
+          shell: >
+            awk '/kubeadm join/{flag=1}/--control-plane/{flag=0}flag; /--control-plane/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_master_nodes.sh
+          args:
+            executable: /bin/bash
+          when: inventory_hostname == "master01"
+
+        - name: Extract and write join command for worker nodes
+          shell: >
+            awk '/kubeadm join/{flag=1}/--discovery-token-ca-cert-hash/{flag=0}flag; /--discovery-token-ca-cert-hash/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_worker_nodes.sh
+          args:
+            executable: /bin/bash
+          when: inventory_hostname == "master01"
+
+        - name: Get join command from master01
+          fetch:
+            src: "/tmp/join_master_nodes.sh"
+            dest: "/tmp/join_master_nodes.sh"
+            flat: yes
+          when: inventory_hostname == "master01"
+
+        - name: Copy join file to master nodes
           copy:
-            content: "{{ init_output.stdout }}"
-            dest: "$HOME/tmp/kube_join_commands"
+            src: "/tmp/join_master_nodes.sh"
+            dest: "/tmp/join_master_nodes.sh"
+          when: inventory_hostname != "master01"
+
+        # - name: Delete cluster_initialized.info file
+        #   file:
+        #     path: "/tmp/cluster_initialized.info"
+        #     state: absent
+        #   when: inventory_hostname == "master01"
+
+        # - name: Debug init output
+        #   debug:
+        #     var: init_output
+        #   when: inventory_hostname == "master01"
+          
+        - name: Extract and save certificate key
+          shell: kubeadm init phase upload-certs --upload-certs
+          register: upload_certs_output
           when: inventory_hostname == "master01"
-          delegate_to: localhost
 
-    - name: Debug init output
-      debug:
-        var: init_output.stdout
-      when: inventory_hostname == "master01"
+        - name: Debug certificate key output
+          debug:
+            var: upload_certs_output.stdout_lines
+          # when: inventory_hostname == "master01" and init_output is changed
 
-    # - name: Capture master and worker join commands
-    #   set_fact:
-    #     join_command_master: "{{ init_output.stdout | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
-    #     join_command_worker: "{{ init_output.stdout | regex_search('kubeadm join .+\\n') }}"
-    #   when: inventory_hostname == "master01"
+    - name:
+      file:
+        path: /var/lib/kubelet
+        state: directory
+        mode: '0755'
 
     - name: Generate kubelet config file
-      shell: kubeadm config print init-defaults --component-configs KubeletConfiguration > /var/lib/kubelet/config.yaml
+      shell: |
+        kubeadm config print init-defaults --component-configs KubeletConfiguration > /var/lib/kubelet/config.yaml
       args:
         executable: /bin/bash
-      become: yes
 
     - name: Set permissions for kubelet config file
       file:
@@ -350,22 +379,11 @@
         owner: root
         group: root
         mode: '0644'
-      become: yes
 
     - name: Restart kubelet service
       systemd:
         name: kubelet
         state: restarted
-      become: yes
-
-    - name: Join other master nodes to the cluster
-      command: "{{ lookup('file', '$HOME/tmp/kube_join_commands') | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
-      when: inventory_hostname != "master01" and inventory_hostname in groups['masters']
-      delegate_to: "{{ inventory_hostname }}"
-
-    # - name: Join other master nodes to the cluster
-    #   command: "{{ hostvars['master01'].join_command_master }}"
-    #   when: inventory_hostname != "master01" and hostvars['master01'].join_command_master is defined
 
     - name: Setup kubeconfig and apply CNI Plugin on the first master
       block:
@@ -382,13 +400,19 @@
             echo "${APISERVER_CERT}" | sudo tee /usr/local/share/ca-certificates/kubernetes.crt
           when: inventory_hostname == "master01"
 
-        - name: Update CA Certificates
-          command: sudo update-ca-certificates
+        - name: Extract certificate key
+          set_fact:
+            certificate_key: "{{ upload_certs_output.stdout | regex_search('(b[0-9a-f]{64})') }}"
           when: inventory_hostname == "master01"
 
-        - name: Join other master nodes to the cluster
-          command: "{{ join_command_master }}"
-          when: inventory_hostname != "master01" and join_command_master is defined
+        # - name: Generate master node join command
+        #   shell: kubeadm token create --print-join-command --certificate-key {{ certificate_key }}
+        #   register: master_join_command
+        #   when: inventory_hostname == "master01"
+
+        # - name: Debug master node join command
+        #   debug:
+        #     var: master_join_command.stdout
 
         # - name: Join other master nodes to the cluster
         #   command: >
