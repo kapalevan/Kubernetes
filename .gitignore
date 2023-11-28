@@ -1,2 +1,3 @@
 *.tfvars
+*vault.yaml
 *vault.yml
