@@ -1,5 +1,13 @@
-variable "vm_name" {
-  description = "Name of the VM"
+variable "api-server" {
+  description = "Map of api-server with appropriate properties"
+  type = map(object({
+    ipv4_address    = string
+    ipv4_netmask    = number
+    ipv4_gateway    = string
+    domain          = string
+    dns_suffix_list = list(string)
+    dns_server_list = list(string)
+  }))
 }
 
 variable "vcenter_server" {
@@ -10,18 +18,9 @@ variable "template_name" {
   description = "OS Template name"
 }
 
-variable "vm_ip" {
-  description = "IP Address for the VM"
-}
-
-variable "vm_hostname" {
-  description = "Hostname for the VM"
-
-}
-
-variable "vm_domain" {
-  description = "Domain for the VM"
-}
+#variable "vm_domain" {
+#  description = "Domain for the VM"
+#}
 
 variable "vm_folder" {
   description = "The destination folder for the VM in vSphere"
@@ -63,23 +62,23 @@ variable "cluster_name" {
   type        = string
 }
 
-variable "ipv4_gateway" {
-  description = "The IPv4 gateway for the VM"
-  type        = string
-}
+#variable "ipv4_gateway" {
+#  description = "The IPv4 gateway for the VM"
+#  type        = string
+#}
 
-variable "dns_servers" {
-  description = "List of DNS servers"
-  type        = list(string)
-}
+#variable "dns_servers" {
+#  description = "List of DNS servers"
+#  type        = list(string)
+#}
 
-variable "ssh_username" {
-  description = "SSH username for the VM"
-  type        = string
-}
+#variable "ssh_username" {
+#  description = "SSH username for the VM"
+#  type        = string
+#}
 
-variable "ssh_password" {
-  description = "SSH password for the VM"
-  type        = string
-  sensitive   = true  # Marks the variable as sensitive, preventing it from being displayed in logs
-}
+#variable "ssh_password" {
+#  description = "SSH password for the VM"
+#  type        = string
+#  sensitive   = true  # Marks the variable as sensitive, preventing it from being displayed in logs
+#}

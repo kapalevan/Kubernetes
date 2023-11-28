@@ -46,16 +46,15 @@ data "vsphere_virtual_machine" "template" {
 }
 
 resource "vsphere_virtual_machine" "vm" {
-  name             = var.vm_name
-#  resource_pool_id = data.vsphere_resource_pool.pool.id # Setting must be used if resource pool present in vSphere under Datacenter
-  resource_pool_id = data.vsphere_compute_cluster.cluster.resource_pool_id
-  datastore_id     = data.vsphere_datastore.datastore.id
-  folder           = var.vm_folder
+  for_each          = var.api-server
+  name              = each.key
+  resource_pool_id  = data.vsphere_compute_cluster.cluster.resource_pool_id
+  datastore_id      = data.vsphere_datastore.datastore.id
+  folder            = var.vm_folder
+  guest_id          = data.vsphere_virtual_machine.template.guest_id
+  num_cpus          = var.num_cpus
+  memory            = var.memory
 
-  num_cpus = 2
-  memory   = 2048
-#  guest_id = "ubuntu64Guest"  # Replace with your specific guest OS type
-  guest_id = data.vsphere_virtual_machine.template.guest_id
 
   network_interface {
     network_id   = data.vsphere_network.network.id
@@ -74,16 +73,18 @@ resource "vsphere_virtual_machine" "vm" {
 
     customize {
       linux_options {
-        host_name = var.vm_hostname
-        domain    = var.vm_domain
+        host_name = each.key
+        domain    = each.value.domain
       }
 
       network_interface {
-        ipv4_address = var.vm_ip
-        ipv4_netmask = 24
+        ipv4_address = each.value.ipv4_address
+        ipv4_netmask = each.value.ipv4_netmask
       }
 
-      ipv4_gateway = var.ipv4_gateway
+      ipv4_gateway    = each.value.ipv4_gateway
+      dns_suffix_list = each.value.dns_suffix_list
+      dns_server_list = each.value.dns_server_list
     }
   }
 }
