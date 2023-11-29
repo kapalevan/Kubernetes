@@ -4,13 +4,3 @@ kubernetesVersion: "{{ kubernetes_version }}"
 controlPlaneEndpoint: "{{ load_balancer_dns }}:{{ load_balancer_port }}"
 networking:
   podSubnet: "{{ pod_subnet }}"
-apiServer:
-  certSANs:
-    - "{{ apiserver_advertise_address }}"
-    - "{{ load_balancer_dns }}"
-etcd:
-  local:
-    serverCertSANs:
-      - "{{ apiserver_advertise_address }}"
-    peerCertSANs:
-      - "{{ apiserver_advertise_address }}"
