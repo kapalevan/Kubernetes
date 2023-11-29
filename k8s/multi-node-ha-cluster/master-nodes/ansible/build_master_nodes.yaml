@@ -418,17 +418,23 @@
             state: absent
         
         - name: Print Master Node Join command into static file
-          shell: |
-            kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs) --ttl 0  >> /tmp/master_join_script.sh
-          args:
-            executable: /bin/bash
+          shell: >
+            CONTROL_PLANE_ENDPOINT="api-server.devops.tbc:6443"
+            join_command=$(kubeadm token create --print-join-command --ttl 0)
+            token=$(echo $join_command | awk '{print $5}')
+            discovery_token_ca_cert_hash_flag="--discovery-token-ca-cert-hash"
+            discovery_token_ca_cert_hash=$(echo $join_command | grep -oP '(sha256:\S+)')
+            certificate_key=$(kubeadm init phase upload-certs --upload-certs | tail -n1)
+            full_join_command="kubeadm join $CONTROL_PLANE_ENDPOINT --token $token \
+              $discovery_token_ca_cert_hash_flag $discovery_token_ca_cert_hash \
+              --control-plane --certificate-key $certificate_key"
+            echo "Full join command for master nodes:"
+            echo $full_join_command >> /tmp/master_join_script.sh
           when: inventory_hostname == "master01"
 
         - name: Print Worker Node Join command into static file
-          shell: |
-            kubeadm token create --print-join-command --ttl 0  >> >> /tmp/worker_join_script.sh
-          args:
-            executable: /bin/bash
+          shell: >
+            kubeadm token create --print-join-command --ttl 0  >> /tmp/worker_join_script.sh
           when: inventory_hostname == "master01"
 
         # - name: Extract and write join command for master nodes
