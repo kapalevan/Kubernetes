@@ -313,24 +313,24 @@
           when: inventory_hostname == "master01"
           changed_when: false
 
-    - name: Store join commands in local file
-      block:
-        - name: Create tmp directory
-          file:
-            path: "$HOME/tmp"
-            state: directory
-            mode: '0755'
-        - name: Store join commands in local file
-          copy:
-            content: "{{ init_output.stdout }}"
-            dest: "$HOME/tmp/kube_join_commands"
-          when: inventory_hostname == "master01"
-          delegate_to: localhost
+    # - name: Store join commands in local file
+    #   block:
+    #     - name: Create tmp directory
+    #       file:
+    #         path: "$HOME/tmp"
+    #         state: directory
+    #         mode: '0755'
+    #     - name: Store join commands in local file
+    #       copy:
+    #         content: "{{ init_output.stdout }}"
+    #         dest: "$HOME/tmp/kube_join_commands"
+    #       when: inventory_hostname == "master01"
+    #       delegate_to: localhost
 
-    - name: Debug init output
-      debug:
-        var: init_output.stdout
-      when: inventory_hostname == "master01"
+    # - name: Debug init output
+    #   debug:
+    #     var: init_output.stdout
+    #   when: inventory_hostname == "master01"
 
     # - name: Capture master and worker join commands
     #   set_fact:
@@ -358,10 +358,10 @@
         state: restarted
       become: yes
 
-    - name: Join other master nodes to the cluster
-      command: "{{ lookup('file', '$HOME/tmp/kube_join_commands') | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
-      when: inventory_hostname != "master01" and inventory_hostname in groups['masters']
-      delegate_to: "{{ inventory_hostname }}"
+    # - name: Join other master nodes to the cluster
+    #   command: "{{ lookup('file', '$HOME/tmp/kube_join_commands') | regex_search('kubeadm join .+ --control-plane --certificate-key .+') }}"
+    #   when: inventory_hostname != "master01" and inventory_hostname in groups['masters']
+    #   delegate_to: "{{ inventory_hostname }}"
 
     # - name: Join other master nodes to the cluster
     #   command: "{{ hostvars['master01'].join_command_master }}"
@@ -386,9 +386,9 @@
           command: sudo update-ca-certificates
           when: inventory_hostname == "master01"
 
-        - name: Join other master nodes to the cluster
-          command: "{{ join_command_master }}"
-          when: inventory_hostname != "master01" and join_command_master is defined
+        # - name: Join other master nodes to the cluster
+        #   command: "{{ join_command_master }}"
+        #   when: inventory_hostname != "master01" and join_command_master is defined
 
         # - name: Join other master nodes to the cluster
         #   command: >
