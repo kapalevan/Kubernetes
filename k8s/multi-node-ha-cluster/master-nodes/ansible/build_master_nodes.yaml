@@ -288,19 +288,6 @@
         dest: /etc/kubernetes/kubeadm-config.yaml
       when: inventory_hostname == "master01"
 
-    # - name: Initialize Kubernetes cluster
-    #   block:
-    #     - name: Initialize Kubernetes cluster on master01
-    #       command: >
-    #         kubeadm init
-    #         --kubernetes-version {{ kubernetes_version }}
-    #         --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
-    #         --upload-certs
-    #         --apiserver-advertise-address {{ apiserver_advertise_address }}
-    #         --pod-network-cidr {{ pod_subnet }} >> /tmp/join_masters.sh
-    #       # register: init_output
-    #       when: inventory_hostname == "master01"
-
     - name: Initialize Kubernetes cluster
       block:
         - name: Initialize Kubernetes cluster on master01
@@ -310,46 +297,8 @@
             --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
             --upload-certs
             --apiserver-advertise-address {{ apiserver_advertise_address }}
-            --pod-network-cidr {{ pod_subnet }} >> /tmp/cluster_initialized.info
+            --pod-network-cidr {{ pod_subnet }}
           when: inventory_hostname == "master01"
-
-        - name: Extract and write join command for master nodes
-          shell: >
-            awk '/kubeadm join/{flag=1}/--control-plane/{flag=0}flag; /--control-plane/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_master_nodes.sh
-          args:
-            executable: /bin/bash
-          when: inventory_hostname == "master01"
-
-        - name: Extract and write join command for worker nodes
-          shell: >
-            awk '/kubeadm join/{flag=1}/--discovery-token-ca-cert-hash/{flag=0}flag; /--discovery-token-ca-cert-hash/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_worker_nodes.sh
-          args:
-            executable: /bin/bash
-          when: inventory_hostname == "master01"
-
-        - name: Get join command from master01
-          fetch:
-            src: "/tmp/join_master_nodes.sh"
-            dest: "/tmp/join_master_nodes.sh"
-            flat: yes
-          when: inventory_hostname == "master01"
-
-        - name: Copy join file to master nodes
-          copy:
-            src: "/tmp/join_master_nodes.sh"
-            dest: "/tmp/join_master_nodes.sh"
-          when: inventory_hostname != "master01"
-
-        # - name: Delete cluster_initialized.info file
-        #   file:
-        #     path: "/tmp/cluster_initialized.info"
-        #     state: absent
-        #   when: inventory_hostname == "master01"
-
-        # - name: Debug init output
-        #   debug:
-        #     var: init_output
-        #   when: inventory_hostname == "master01"
           
         - name: Extract and save certificate key
           shell: kubeadm init phase upload-certs --upload-certs
@@ -359,7 +308,6 @@
         - name: Debug certificate key output
           debug:
             var: upload_certs_output.stdout_lines
-          # when: inventory_hostname == "master01" and init_output is changed
 
     - name:
       file:
@@ -468,3 +416,57 @@
           ansible.builtin.file:
             path: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
             state: absent
+        
+        - name: Print Master Node Join command into static file
+          shell: |
+            kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs) --ttl 0  >> /tmp/master_join_script.sh
+          args:
+            executable: /bin/bash
+          when: inventory_hostname == "master01"
+
+        - name: Print Worker Node Join command into static file
+          shell: |
+            kubeadm token create --print-join-command --ttl 0  >> >> /tmp/worker_join_script.sh
+          args:
+            executable: /bin/bash
+          when: inventory_hostname == "master01"
+
+        # - name: Extract and write join command for master nodes
+        #   shell: >
+        #     awk '/kubeadm join/{flag=1}/--control-plane/{flag=0}flag; /--control-plane/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_master_nodes.sh
+        #   args:
+        #     executable: /bin/bash
+        #   when: inventory_hostname == "master01"
+
+        # - name: Extract and write join command for worker nodes
+        #   shell: >
+        #     awk '/kubeadm join/{flag=1}/--discovery-token-ca-cert-hash/{flag=0}flag; /--discovery-token-ca-cert-hash/{gsub(/\\/, ""); print; exit}' /tmp/cluster_initialized.info > /tmp/join_worker_nodes.sh
+        #   args:
+        #     executable: /bin/bash
+        #   when: inventory_hostname == "master01"
+
+        - name: Get join command from master01
+          fetch:
+            src: "/tmp/master_join_script.sh"
+            dest: "/tmp/master_join_script.sh"
+            flat: yes
+          when: inventory_hostname == "master01"
+
+        - name: Copy join file to master nodes
+          copy:
+            src: "/tmp/master_join_script.sh"
+            dest: "/tmp/master_join_script.sh"
+          when: inventory_hostname != "master01"
+
+        - name: Get join command from master01
+          fetch:
+            src: "/tmp/worker_join_script.sh"
+            dest: "/tmp/worker_join_script.sh"
+            flat: yes
+          when: inventory_hostname == "master01"
+
+        - name: Copy join file to master nodes
+          copy:
+            src: "/tmp/worker_join_script.sh"
+            dest: "/tmp/worker_join_script.sh"
+          when: inventory_hostname != "master01"
