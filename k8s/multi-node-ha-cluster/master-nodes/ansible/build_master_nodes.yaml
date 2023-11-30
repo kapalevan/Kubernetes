@@ -280,7 +280,7 @@
       systemd:
         name: kubelet
         enabled: yes
-        state: started
+        state: restarted
 
     - name: Create Kubeadm Config for HA Setup
       template:
@@ -352,6 +352,9 @@
           set_fact:
             certificate_key: "{{ upload_certs_output.stdout | regex_search('(b[0-9a-f]{64})') }}"
           when: inventory_hostname == "master01"
+
+        - name: Update CA certificates
+          command: update-ca-certificates
 
         - name: Copy admin.conf to user's kube config
           copy:
