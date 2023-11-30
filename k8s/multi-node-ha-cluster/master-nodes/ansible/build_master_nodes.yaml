@@ -288,10 +288,22 @@
         dest: /etc/kubernetes/kubeadm-config.yaml
       when: inventory_hostname == "master01"
 
+    # - name: Initialize Kubernetes cluster
+    #   block:
+    #     - name: Initialize Kubernetes cluster on master01
+    #       shell: >
+    #         kubeadm init
+    #         --kubernetes-version {{ kubernetes_version }}
+    #         --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
+    #         --upload-certs
+    #         --apiserver-advertise-address {{ apiserver_advertise_address }}
+    #         --pod-network-cidr {{ pod_subnet }}
+    #       when: inventory_hostname == "master01"
+
     - name: Initialize Kubernetes cluster
       block:
         - name: Initialize Kubernetes cluster on master01
-          shell: >
+          command: >
             kubeadm init
             --kubernetes-version {{ kubernetes_version }}
             --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
@@ -348,13 +360,13 @@
             echo "${APISERVER_CERT}" | sudo tee /usr/local/share/ca-certificates/kubernetes.crt
           when: inventory_hostname == "master01"
 
+        - name: Update CA certificates
+          command: update-ca-certificates
+
         - name: Extract certificate key
           set_fact:
             certificate_key: "{{ upload_certs_output.stdout | regex_search('(b[0-9a-f]{64})') }}"
           when: inventory_hostname == "master01"
-
-        - name: Update CA certificates
-          command: update-ca-certificates
 
         - name: Copy admin.conf to user's kube config
           copy:
