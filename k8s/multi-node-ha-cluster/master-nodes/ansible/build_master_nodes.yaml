@@ -186,6 +186,26 @@
         - kubeadm
         - kubectl
 
+    - name: Generate correct KubeletConfiguration file
+      shell: |
+        kubeadm config print init-defaults | awk '/kubelet:/,/---/' > /var/lib/kubelet/kubelet-config.yaml
+      args:
+        executable: /bin/bash
+      when: inventory_hostname == "master01"
+
+    - name: Update kubelet service to use the new config
+      lineinfile:
+        path: /etc/default/kubelet
+        regexp: '^KUBELET_EXTRA_ARGS='
+        line: 'KUBELET_EXTRA_ARGS="--config=/var/lib/kubelet/kubelet-config.yaml"'
+      when: inventory_hostname == "master01"
+
+    - name: Restart kubelet service to apply new configuration
+      systemd:
+        name: kubelet
+        state: restarted
+      when: inventory_hostname == "master01"
+
     - name: Install containerd 1.6
       block:
         - name: Ensure /etc/containerd directory exists
@@ -288,22 +308,10 @@
         dest: /etc/kubernetes/kubeadm-config.yaml
       when: inventory_hostname == "master01"
 
-    # - name: Initialize Kubernetes cluster
-    #   block:
-    #     - name: Initialize Kubernetes cluster on master01
-    #       shell: >
-    #         kubeadm init
-    #         --kubernetes-version {{ kubernetes_version }}
-    #         --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
-    #         --upload-certs
-    #         --apiserver-advertise-address {{ apiserver_advertise_address }}
-    #         --pod-network-cidr {{ pod_subnet }}
-    #       when: inventory_hostname == "master01"
-
     - name: Initialize Kubernetes cluster
       block:
         - name: Initialize Kubernetes cluster on master01
-          command: >
+          shell: >
             kubeadm init
             --kubernetes-version {{ kubernetes_version }}
             --control-plane-endpoint "{{ load_balancer_dns }}:{{ load_balancer_port }}"
@@ -311,7 +319,7 @@
             --apiserver-advertise-address {{ apiserver_advertise_address }}
             --pod-network-cidr {{ pod_subnet }}
           when: inventory_hostname == "master01"
-          
+
         - name: Extract and save certificate key
           shell: kubeadm init phase upload-certs --upload-certs
           register: upload_certs_output
@@ -320,30 +328,6 @@
         - name: Debug certificate key output
           debug:
             var: upload_certs_output.stdout_lines
-
-    - name:
-      file:
-        path: /var/lib/kubelet
-        state: directory
-        mode: '0755'
-
-    - name: Generate kubelet config file
-      shell: |
-        kubeadm config print init-defaults --component-configs KubeletConfiguration > /var/lib/kubelet/config.yaml
-      args:
-        executable: /bin/bash
-
-    - name: Set permissions for kubelet config file
-      file:
-        path: /var/lib/kubelet/config.yaml
-        owner: root
-        group: root
-        mode: '0644'
-
-    - name: Restart kubelet service
-      systemd:
-        name: kubelet
-        state: restarted
 
     - name: Setup kubeconfig and apply CNI Plugin on the first master
       block:
@@ -413,7 +397,7 @@
           ansible.builtin.file:
             path: "/tmp/etcd-{{ etcdctl_version }}-linux-{{ dpkg_architecture.stdout }}.tar.gz"
             state: absent
-        
+
         - name: Print Master Node Join command into static file
           shell: >
             CONTROL_PLANE_ENDPOINT="api-server.devops.tbc:6443"
