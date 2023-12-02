@@ -1,0 +1,5 @@
+Host *
+    StrictHostKeyChecking {{ os_hardening.ssh.stricthostkeychecking }}
+    UserKnownHostsFile {{ os_hardening.ssh.userknownhostsfile }}
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
