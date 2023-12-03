@@ -9,6 +9,7 @@
     - name: Set system timezone
       timezone:
         name: "{{ os_hardening.timezone }}"
+        hwclock: local
 
     - name: Set system hostname
       hostname:
