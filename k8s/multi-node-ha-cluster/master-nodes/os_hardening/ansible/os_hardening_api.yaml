@@ -6,6 +6,35 @@
     - vault.yaml
 
   tasks:
+    - name: Configure /run/systemd/resolve/resolv.conf
+      lineinfile:
+        path: /run/systemd/resolve/resolv.conf
+        line: "{{ item }}"
+        create: yes
+      loop:
+        - "nameserver {{ dns_servers | join(' ') }}"
+        - "search {{ domain_name }}"
+      when: dns_servers is defined or domain_name is defined
+      notify: Restart systemd-resolved
+
+    - name: Create symbolic link for /etc/resolv.conf
+      file:
+        src: /run/systemd/resolve/resolv.conf
+        dest: /etc/resolv.conf
+        state: link
+        force: yes
+      when: dns_servers is defined or domain_name is defined
+
+    - name: Generate Netplan configuration
+      template:
+        src: netplan-config.j2
+        dest: /etc/netplan/01-netcfg.yaml
+      when: dns_servers is defined
+
+    - name: Apply Netplan configuration
+      command: netplan apply
+      when: dns_servers is defined
+
     - name: Set system timezone
       timezone:
         name: "{{ os_hardening.timezone }}"
@@ -129,4 +158,8 @@
     - name: Restart sshd
       service:
         name: ssh
+        state: restarted
+    - name: Restart systemd-resolved
+      service:
+        name: systemd-resolved
         state: restarted
