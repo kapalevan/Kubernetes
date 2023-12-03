@@ -22,7 +22,6 @@
     - name: Enable UFW
       ufw:
         state: disabled
-      when: inventory_hostname == "api-server"
 
     - name: Configure SSH daemon
       template:
@@ -40,13 +39,11 @@
         repo: "{{ item }}"
         state: present
       loop: "{{ os_hardening.repo.debian.ubuntu }}"
-      when: inventory_hostname == "api-server"
 
     - name: Install required packages
       apt:
         name: "{{ os_hardening.packages.apt }}"
         state: present
-      when: inventory_hostname == "api-server"
 
     - name: Install Fail2ban
       apt:
@@ -71,7 +68,6 @@
       apt:
         name: unattended-upgrades
         state: latest
-      when: inventory_hostname == "api-server"
 
     - name: Install and configure NTP
       apt:
@@ -86,7 +82,6 @@
         fstype: tmpfs
         opts: rw,nosuid,nodev,noexec,relatime
         state: mounted
-      when: inventory_hostname == "api-server"
 
     - name: Configure system-wide limits
       blockinfile:
