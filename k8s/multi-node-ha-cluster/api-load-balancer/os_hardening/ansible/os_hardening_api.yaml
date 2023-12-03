@@ -6,6 +6,16 @@
     - vault.yaml
 
   tasks:
+    - name: Generate Netplan configuration
+      template:
+        src: netplan-config.j2
+        dest: /etc/netplan/01-netcfg.yaml
+      when: dns_servers is defined
+
+    - name: Apply Netplan configuration
+      command: netplan apply
+      when: dns_servers is defined
+
     - name: Set system timezone
       timezone:
         name: "{{ os_hardening.timezone }}"
@@ -69,11 +79,11 @@
         name: unattended-upgrades
         state: latest
 
-    - name: Install and configure NTP
-      apt:
-        name: ntp
-        state: latest
-      when: os_hardening.ntp.enabled
+    # - name: Install and configure NTP
+    #   apt:
+    #     name: ntp
+    #     state: latest
+    #   when: os_hardening.ntp.enabled
 
     - name: Secure /tmp filesystem
       mount:

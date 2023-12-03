@@ -10,16 +10,6 @@
     - vault.yaml
 
   tasks:
-    - name: Generate Netplan configuration
-      template:
-        src: netplan-config.j2
-        dest: /etc/netplan/01-netcfg.yaml
-      when: dns_servers is defined
-
-    - name: Apply Netplan configuration
-      command: netplan apply
-      when: dns_servers is defined
-
     - name: Update and upgrade system packages
       apt:
         update_cache: yes

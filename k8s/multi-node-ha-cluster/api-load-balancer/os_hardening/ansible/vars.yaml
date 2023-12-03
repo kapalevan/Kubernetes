@@ -1,3 +1,8 @@
+ansible_host: "3.9.3.150"
+gateway: "3.9.3.1"
+dns_servers:
+  - "3.9.3.122"
+  - "8.8.8.8"
 root_password: "{{ ansible_ssh_password }}"
 os_hardening:
   timezone: "Asia/Tbilisi"
