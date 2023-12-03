@@ -70,11 +70,11 @@
         name: unattended-upgrades
         state: latest
 
-    - name: Install and configure NTP
-      apt:
-        name: ntp
-        state: latest
-      when: os_hardening.ntp.enabled
+    # - name: Install and configure NTP
+    #   apt:
+    #     name: ntp
+    #     state: latest
+    #   when: os_hardening.ntp.enabled
 
     - name: Secure /tmp filesystem
       mount:

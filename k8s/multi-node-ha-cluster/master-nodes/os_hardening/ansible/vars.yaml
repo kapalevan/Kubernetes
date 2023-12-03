@@ -63,7 +63,7 @@ os_hardening:
   audit_logging:
     enabled: true
   automatic_security_updates: true
-  ntp:
-    enabled: true
+  # ntp:
+  #   enabled: true
   filesystem_config:
     secure_tmp: true
