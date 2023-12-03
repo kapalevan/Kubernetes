@@ -6,6 +6,13 @@
     - vault.yaml
 
   tasks:
+    - name: Remove existing Netplan configurations
+      ansible.builtin.file:
+        path: /etc/netplan/{{ item }}
+        state: absent
+      loop: "{{ lookup('ansible.builtin.fileglob', '/etc/netplan/*.yaml', wantlist=True) | map('basename') }}"
+      when: dns_servers is defined
+
     - name: Configure /run/systemd/resolve/resolv.conf
       lineinfile:
         path: /run/systemd/resolve/resolv.conf
@@ -162,3 +169,6 @@
       service:
         name: systemd-resolved
         state: restarted
+    - name: Restart the VM
+      ansible.builtin.reboot:
+      when: dns_servers is defined
