@@ -1,0 +1,131 @@
+---
+- hosts: api-server
+  become: true
+  vars_files:
+    - vars.yaml
+    - vault.yaml
+
+  tasks:
+    - name: Set system timezone
+      timezone:
+        name: "{{ os_hardening.timezone }}"
+
+    - name: Set system hostname
+      hostname:
+        name: "{{ os_hardening.hostname }}"
+
+    - name: Enable UFW
+      ufw:
+        state: disabled
+      when: inventory_hostname == "api-server"
+
+    - name: Configure SSH daemon
+      template:
+        src: sshd_config.j2
+        dest: /etc/ssh/sshd_config
+      notify: Restart sshd
+
+    - name: Configure SSH client
+      template:
+        src: ssh_config.j2
+        dest: /etc/ssh/ssh_config
+
+    - name: Set up repository configurations
+      apt_repository:
+        repo: "{{ item }}"
+        state: present
+      loop: "{{ os_hardening.repo.debian.ubuntu }}"
+      when: inventory_hostname == "api-server"
+
+    - name: Install required packages
+      apt:
+        name: "{{ os_hardening.packages.apt }}"
+        state: present
+      when: inventory_hostname == "api-server"
+
+    - name: Install Fail2ban
+      apt:
+        name: fail2ban
+        state: latest
+      when: os_hardening.fail2ban.enabled
+
+    - name: Create user accounts
+      user:
+        name: "{{ item.name }}"
+        group: sudo
+        append: yes
+      loop: "{{ os_hardening.users }}"
+
+    - name: Install and configure auditd
+      apt:
+        name: auditd
+        state: latest
+      when: os_hardening.audit_logging.enabled
+
+    - name: Enable automatic security updates
+      apt:
+        name: unattended-upgrades
+        state: latest
+      when: inventory_hostname == "api-server"
+
+    - name: Install and configure NTP
+      apt:
+        name: ntp
+        state: latest
+      when: os_hardening.ntp.enabled
+
+    - name: Secure /tmp filesystem
+      mount:
+        path: /tmp
+        src: tmpfs
+        fstype: tmpfs
+        opts: rw,nosuid,nodev,noexec,relatime
+        state: mounted
+      when: inventory_hostname == "api-server"
+
+    - name: Configure system-wide limits
+      blockinfile:
+        path: /etc/security/limits.conf
+        block: |
+          * soft nproc 65535
+          * hard nproc 65535
+          * soft nofile 65535
+          * hard nofile 65535
+        create: yes
+
+    - name: Configure logrotate for system logs
+      blockinfile:
+        path: /etc/logrotate.d/syslogs
+        block: |
+          /var/log/cron.log
+          /var/log/messages
+          /var/log/syslog
+          /var/log/mail.info
+          /var/log/mail.warn
+          /var/log/mail.err
+          /var/log/mail.log
+          /var/log/daemon.log
+          /var/log/kern.log
+          /var/log/auth.log
+          /var/log/user.log
+          /var/log/lpr.log
+          /var/log/debug
+          {
+            rotate 7
+            daily
+            missingok
+            notifempty
+            compress
+            delaycompress
+            sharedscripts
+            postrotate
+              /usr/lib/rsyslog/rsyslog-rotate
+            endscript
+          }
+        create: yes
+
+  handlers:
+    - name: Restart sshd
+      service:
+        name: ssh
+        state: restarted

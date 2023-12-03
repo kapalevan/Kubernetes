@@ -1,0 +1,9 @@
+Port {{ os_hardening.sshd.port }}
+LoginGraceTime {{ os_hardening.sshd.logingracetime }}
+PermitRootLogin {{ os_hardening.sshd.permitrootlogin }}
+MaxAuthTries {{ os_hardening.sshd.maxauthtries }}
+PubkeyAuthentication {{ os_hardening.sshd.pubkeyauthentication }}
+PasswordAuthentication {{ os_hardening.sshd.passwordauthentication }}
+ChallengeResponseAuthentication no
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server
