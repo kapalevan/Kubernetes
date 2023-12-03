@@ -11,6 +11,10 @@
         name: "{{ os_hardening.timezone }}"
         hwclock: local
 
+    - name: Ensure RTC is set to UTC
+      ansible.builtin.command:
+        cmd: timedatectl set-local-rtc 0
+
     - name: Set system hostname
       hostname:
         name: "{{ os_hardening.hostname }}"
