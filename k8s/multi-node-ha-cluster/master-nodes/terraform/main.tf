@@ -52,8 +52,8 @@ resource "vsphere_virtual_machine" "vm" {
   datastore_id      = data.vsphere_datastore.datastore.id
   folder            = var.vm_folder
   guest_id          = data.vsphere_virtual_machine.template.guest_id
-  num_cpus          = 4
-  memory            = 8192
+  num_cpus          = var.num_cpus
+  memory            = var.memory
 
 
   network_interface {

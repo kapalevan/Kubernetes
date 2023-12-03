@@ -18,6 +18,16 @@ variable "template_name" {
   description = "OS Template name"
 }
 
+variable "num_cpus" {
+  description = "Number of vCPU cores allocated to VM"
+  type        = string
+}
+
+variable "memory" {
+  description = "Number of Memory allocated to VM"
+  type        = string
+}
+
 #variable "vm_domain" {
 #  description = "Domain for the VM"
 #}

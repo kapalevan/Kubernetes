@@ -52,8 +52,8 @@ resource "vsphere_virtual_machine" "vm" {
   datastore_id      = data.vsphere_datastore.datastore.id
   folder            = var.vm_folder
   guest_id          = data.vsphere_virtual_machine.template.guest_id
-  num_cpus          = 8
-  memory            = 16384
+  num_cpus          = var.num_cpus
+  memory            = var.memory
 
 
   network_interface {
@@ -63,7 +63,7 @@ resource "vsphere_virtual_machine" "vm" {
 
   disk {
     label            = "disk0"
-    size             = 100
+    size             = data.vsphere_virtual_machine.template.disks.0.size
     eagerly_scrub    = data.vsphere_virtual_machine.template.disks.0.eagerly_scrub
     thin_provisioned = data.vsphere_virtual_machine.template.disks.0.thin_provisioned
   }
@@ -86,5 +86,10 @@ resource "vsphere_virtual_machine" "vm" {
       dns_suffix_list = each.value.dns_suffix_list
       dns_server_list = each.value.dns_server_list
     }
+  }
+
+  extra_config = {
+    "disk.EnableUUID" = "TRUE"
+  
   }
 }
