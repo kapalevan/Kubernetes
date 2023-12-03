@@ -86,4 +86,9 @@ resource "vsphere_virtual_machine" "vm" {
       dns_server_list = each.value.dns_server_list
     }
   }
+
+  extra_config = {
+    "disk.EnableUUID" = "TRUE"
+  
+  }
 }
