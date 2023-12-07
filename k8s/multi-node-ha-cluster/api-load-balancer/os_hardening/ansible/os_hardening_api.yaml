@@ -146,6 +146,15 @@
           /var/log/user.log
           /var/log/lpr.log
           /var/log/debug
+          /var/log/fail2ban.log
+          /var/log/kern.log
+          /var/log/cloud-init.log
+          /var/log/cloud-init-output.log
+          /var/log/ubuntu-advantage.log
+          /var/log/ubuntu-advantage-timer.log
+          /var/log/vmware-network.log
+          /var/log/vmware-vmsvc-root.log
+          /var/log/vmware-vmtoolsd-root.log
           {
             rotate 7
             daily

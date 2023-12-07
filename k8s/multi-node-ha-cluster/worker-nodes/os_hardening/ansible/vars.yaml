@@ -1,0 +1,74 @@
+gateway: "3.9.3.1"
+dns_servers:
+  - "3.9.3.122"
+  - "8.8.8.8"
+domain_name: "devops.tbc"
+root_password: "{{ ansible_ssh_password }}"
+os_hardening:
+  timezone: "Asia/Tbilisi"
+  hostname: "{{ inventory_hostname }}"
+  ufw: 
+    mode: "disabled"
+  sshd:
+    port: "22"
+    logingracetime: "60m"
+    permitrootlogin: "yes"
+    maxauthtries: "6"
+    pubkeyauthentication: "yes"
+    pubkeyacceptedalgorithms: "+ssh-ed25519"
+    passwordauthentication: "yes"
+    banner: "/etc/ssh/banner"
+  ssh:
+    stricthostkeychecking: "no"
+    userknownhostsfile: "~/.ssh/known_hosts"
+  repo:
+    delete_default: true
+    debian:
+      ubuntu:
+        - "deb http://archive.ubuntu.com/ubuntu/ focal main restricted"
+        - "deb http://archive.ubuntu.com/ubuntu/ focal-updates main restricted"
+        - "deb http://archive.ubuntu.com/ubuntu/ focal universe"
+        - "deb http://archive.ubuntu.com/ubuntu/ focal-updates universe"
+        - "deb http://archive.ubuntu.com/ubuntu/ focal multiverse"
+        - "deb http://archive.ubuntu.com/ubuntu/ focal-updates multiverse"
+        - "deb http://archive.ubuntu.com/ubuntu/ focal-backports main restricted universe multiverse"
+        - "deb http://security.ubuntu.com/ubuntu focal-security main restricted"
+        - "deb http://security.ubuntu.com/ubuntu focal-security universe"
+        - "deb http://security.ubuntu.com/ubuntu focal-security multiverse"
+  packages:
+    apt:
+      - vim
+      - mc
+      - tree
+      - wget
+      - bash-completion
+      - ca-certificates
+      - sysstat
+      - unzip
+      - htop
+      - iotop
+      - lsof
+      - strace
+      - traceroute
+      - tcpdump
+      - tmux
+      - atop
+      - nfs-common
+      - locales
+      - software-properties-common
+      - pip
+      - cron
+      - less
+  fail2ban:
+    enabled: true
+  users:
+    - name: "mgmtusr"
+      sudo: "yes"
+  kernel_hardening: true
+  audit_logging:
+    enabled: true
+  automatic_security_updates: true
+  # ntp:
+  #   enabled: true
+  filesystem_config:
+    secure_tmp: true
