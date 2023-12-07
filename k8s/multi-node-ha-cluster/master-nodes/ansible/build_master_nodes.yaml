@@ -430,27 +430,6 @@
             dest: "/tmp/master_join_script.sh"
           when: inventory_hostname != "master01"
 
-        # - name: Join other master nodes to the cluster
-        #   command: >
-        #     kubeadm join {{ load_balancer_dns }}:{{ load_balancer_port }}
-        #     --token your_token
-        #     --discovery-token-ca-cert-hash sha256:your_hash
-        #     --control-plane
-        #     --certificate-key your_certificate_key
-        #   when: inventory_hostname != "master01"
-
-        # - name: Copy and grant access to kubeconfig for local use
-        #   shell: >
-        #     if [ -f "/etc/kubernetes/admin.conf" ]; then
-        #         mkdir -p $HOME/.kube
-        #         cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-        #         chown $(id -u):$(id -g) $HOME/.kube/config
-        #     else
-        #         echo "/etc/kubernetes/admin.conf not found, unable to set up kubeconfig"
-        #         exit 1
-        #     fi
-        #   when: inventory_hostname != "master01"
-
         - name: Get join command from master01
           fetch:
             src: "/tmp/worker_join_script.sh"
@@ -458,8 +437,14 @@
             flat: yes
           when: inventory_hostname == "master01"
 
-        - name: Copy join file to master nodes
+        - name: Copy join file to worker nodes
           copy:
             src: "/tmp/worker_join_script.sh"
             dest: "/tmp/worker_join_script.sh"
-          when: inventory_hostname != "master01"
+          when: inventory != "masters"
+
+        # - name: Join other master nodes to the cluster
+        #   command: |
+        #        chmod +x /tmp/worker_join_script.sh
+        #        sh /tmp/worker_join_script.sh
+        #   when: inventory == "workers"
