@@ -199,6 +199,15 @@
         executable: /bin/bash
       when: inventory_hostname == "master01"
 
+    - name: Check if kubelet-config.yaml is populated
+      stat:
+        path: /var/lib/kubelet/kubelet-config.yaml
+      register: kubelet_config_stat
+
+    - name: Generate kubelet-config.yaml
+      command: kubeadm config print init-defaults --component-configs KubeletConfiguration > /var/lib/kubelet/kubelet-config.yaml
+      when: not kubelet_config_stat.stat.exists or kubelet_config_stat.stat.size == 0
+
     - name: Update kubelet service to use the new config
       lineinfile:
         path: /etc/default/kubelet
