@@ -186,6 +186,12 @@
         - kubeadm
         - kubectl
 
+    - name: Ensure /var/lib/kubelet/ directory exists
+      file:
+        path: /var/lib/kubelet
+        state: directory
+        mode: '0755'
+
     - name: Generate correct KubeletConfiguration file
       shell: |
         kubeadm config print init-defaults | awk '/kubelet:/,/---/' > /var/lib/kubelet/kubelet-config.yaml
