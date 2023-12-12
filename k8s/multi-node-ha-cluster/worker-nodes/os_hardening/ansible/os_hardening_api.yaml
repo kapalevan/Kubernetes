@@ -153,9 +153,18 @@
           /var/log/cloud-init-output.log
           /var/log/ubuntu-advantage.log
           /var/log/ubuntu-advantage-timer.log
-          /var/log/vmware-network.log
-          /var/log/vmware-vmsvc-root.log
-          /var/log/vmware-vmtoolsd-root.log
+          /var/log/vmware-network.*.log
+          /var/log/vmware-vmsvc-root.*.log
+          /var/log/vmware-vmtoolsd-root.*.log
+          /var/log/alternatives.log
+          /var/log/bootstrap.log
+          /var/log/btmp
+          /var/log/dpkg.log
+          /var/log/faillog
+          /var/log/fontconfig.log
+          /var/log/lastlog
+          /var/log/wtmp
+
           {
             rotate 7
             daily

@@ -400,7 +400,7 @@
 
         - name: Print Master Node Join command into static file
           shell: >
-            CONTROL_PLANE_ENDPOINT="api-server.devops.tbc:6443"
+            CONTROL_PLANE_ENDPOINT="{{ load_balancer_dns }}:{{ load_balancer_port }}"
             join_command=$(kubeadm token create --print-join-command --ttl 0)
             token=$(echo $join_command | awk '{print $5}')
             discovery_token_ca_cert_hash_flag="--discovery-token-ca-cert-hash"
@@ -428,7 +428,7 @@
           copy:
             src: "/tmp/master_join_script.sh"
             dest: "/tmp/master_join_script.sh"
-          when: inventory_hostname != "master01"
+          when: inventory_hostname == "master02", "master03"
 
         - name: Get join command from master01
           fetch:
@@ -441,10 +441,14 @@
           copy:
             src: "/tmp/worker_join_script.sh"
             dest: "/tmp/worker_join_script.sh"
-          when: inventory != "masters"
+          when: inventory == "workers"
 
-        # - name: Join other master nodes to the cluster
-        #   command: |
-        #        chmod +x /tmp/worker_join_script.sh
-        #        sh /tmp/worker_join_script.sh
-        #   when: inventory == "workers"
+        - name: Make master nodes join script executable
+          command: |
+               chmod +x /tmp/master_join_script.sh
+          when: inventory_hostname == "master02", "master03"
+
+        - name: Join other master nodes to the cluster
+          command: |
+               sh /tmp/master_join_script.sh
+          when: inventory_hostname == "master02", "master03"
