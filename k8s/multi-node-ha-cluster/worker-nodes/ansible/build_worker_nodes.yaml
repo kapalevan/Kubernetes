@@ -1,0 +1,293 @@
+- hosts: workers
+  become: true
+  vars_files:
+    - vars.yaml
+    - vault.yaml
+
+  tasks:
+    - name: Check Ubuntu Version
+      fail:
+        msg: "This playbook is only compatible with Ubuntu 20.04."
+      when: ansible_distribution != 'Ubuntu' or ansible_distribution_version != '20.04'
+
+    - name: Update and Install Prerequisites
+      apt:
+        name:
+          - bash-completion
+          - binutils
+        update_cache: yes
+
+    - name: Ensure .vimrc exists
+      file:
+        path: "/root/.vimrc"
+        state: touch
+        mode: '0644'
+
+    - name: Configure vimrc
+      blockinfile:
+        path: "/root/.vimrc"
+        block: |
+          colorscheme ron
+          set tabstop=2
+          set shiftwidth=2
+          set expandtab
+        create: yes
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+
+    - name: Setup Terminal Configuration
+      blockinfile:
+        path: "~/.vimrc"
+        block: |
+          colorscheme ron
+          set tabstop=2
+          set shiftwidth=2
+          set expandtab
+        create: yes
+
+    - name: Configure Bashrc for kubectl
+      blockinfile:
+        path: "~/.bashrc"
+        block: |
+          source <(kubectl completion bash)
+          alias k=kubectl
+          alias c=clear
+          complete -F __start_kubectl k
+          force_color_prompt=yes
+
+    - name: Disable Swap
+      command: swapoff -a
+
+    - name: Update fstab to disable swap
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^([^#].*\sswap\s)'
+        line: '#\1'
+
+    - name: Reset Kubernetes if installed
+      block:
+        - name: Reset kubeadm
+          command: kubeadm reset -f
+          ignore_errors: yes
+
+        - name: Unhold Kubernetes packages
+          dpkg_selections:
+            name: "{{ item }}"
+            selection: install
+          loop:
+            - docker.io
+            - containerd
+            - kubelet
+            - kubeadm
+            - kubectl
+            - kubernetes-cni
+
+        - name: Remove existing Kubernetes packages
+          apt:
+            name:
+            - docker.io
+            - containerd
+            - kubelet
+            - kubeadm
+            - kubectl
+            - kubernetes-cni
+            state: absent
+            purge: yes
+
+        - name: Autoremove unnecessary packages
+          apt:
+            autoremove: yes
+
+    - name: Install Podman and dependencies
+      block:
+        - name: Add GPG key for Podman repository
+          apt_key:
+            url: "http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }}/Release.key"
+            state: present
+
+        - name: Add Podman repository
+          apt_repository:
+            repo: "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }} /"
+            state: present
+            filename: 'libcontainers-stable'
+            update_cache: yes
+
+        - name: Install Podman and CRI tools
+          apt:
+            name:
+              - podman
+              - cri-tools
+              - containers-common
+            state: present
+
+    - name: Configure container registries
+      copy:
+        content: |
+          [registries.search]
+          registries = ['docker.io']
+        dest: /etc/containers/registries.conf
+
+    - name: Install Kubernetes Components
+      block:
+        - name: Install apt-transport-https and ca-certificates
+          apt:
+            name:
+              - apt-transport-https
+              - ca-certificates
+            state: present
+            update_cache: yes
+
+    - name: Add Kubernetes GPG key
+      become: yes
+      block:
+        - name: Create /etc/apt/keyrings directory
+          file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: '0755'
+
+        - name: Add Kubernetes GPG key to keyring
+          ansible.builtin.shell: |
+                curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --yes --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+
+        - name: Add Kubernetes repository
+          apt_repository:
+            repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
+            filename: 'kubernetes.list'
+            state: present
+            update_cache: yes
+
+    - name: Unhold Kubernetes packages if they are held
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: install
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Install Kubernetes packages
+      apt:
+        name:
+          - docker.io
+          - containerd
+          - kubelet={{ kubernetes_version }}-00
+          - kubeadm={{ kubernetes_version }}-00
+          - kubectl={{ kubernetes_version }}-00
+          - kubernetes-cni
+        state: present
+        update_cache: yes
+
+    - name: Hold Kubernetes packages
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Ensure /var/lib/kubelet directory exists
+      file:
+        path: /var/lib/kubelet
+        state: directory
+        mode: '0755'
+
+    - name: Install containerd 1.6
+      block:
+        - name: Ensure /etc/containerd directory exists
+          file:
+            path: /etc/containerd
+            state: directory
+            mode: '0755'
+
+        - name: Download containerd
+          get_url:
+            url: "https://github.com/containerd/containerd/releases/download/v1.6.12/containerd-1.6.12-linux-amd64.tar.gz"
+            dest: "/tmp/containerd-1.6.12-linux-amd64.tar.gz"
+
+        - name: Extract containerd
+          unarchive:
+            src: "/tmp/containerd-1.6.12-linux-amd64.tar.gz"
+            dest: "/tmp/"
+            remote_src: yes
+
+        - name: Copy containerd configuration file
+          template:
+            src: containerd-config.toml.j2
+            dest: /etc/containerd/config.toml
+
+        - name: Stop containerd service
+          systemd:
+            name: containerd
+            state: stopped
+
+        - name: Move containerd binaries
+          command: mv /tmp/bin/* /usr/bin/
+          args:
+            creates: "/usr/bin/containerd"
+
+        - name: Remove downloaded and extracted files
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - "/tmp/containerd-1.6.12-linux-amd64.tar.gz"
+            - "/tmp/bin"
+
+    - name: Start and enable containerd
+      systemd:
+        name: containerd
+        enabled: yes
+        state: started
+
+    - name: Configure containerd
+      template:
+        src: containerd-config.toml.j2
+        dest: /etc/containerd/config.toml
+
+    - name: Configure Networking
+      block:
+        - name: Load br_netfilter module
+          modprobe:
+            name: br_netfilter
+            state: present
+
+        - name: Set sysctl parameters
+          sysctl:
+            name: "{{ item.key }}"
+            value: "{{ item.value }}"
+            sysctl_set: yes
+            state: present
+            reload: yes
+          loop:
+            - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+            - { key: 'net.ipv4.ip_forward', value: '1' }
+            - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+
+        - name: Create containerd configuration file
+          template:
+            src: containerd-config.toml.j2
+            dest: /etc/containerd/config.toml
+
+    - name: Configure crictl to use containerd
+      copy:
+        content: |
+          runtime-endpoint: unix:///run/containerd/containerd.sock
+        dest: /etc/crictl.yaml
+
+    - name: Configure kubelet to use containerd
+      copy:
+        content: |
+          KUBELET_EXTRA_ARGS="--container-runtime-endpoint unix:///run/containerd/containerd.sock"
+        dest: /etc/default/kubelet
+
+    - name: Enable and start kubelet
+      systemd:
+        name: kubelet
+        enabled: yes
+        state: restarted
+
+    # Join command to be provided externally
+    - name: Execute join command
+      command: "{{ join_command }}"
+      when: join_command is defined
