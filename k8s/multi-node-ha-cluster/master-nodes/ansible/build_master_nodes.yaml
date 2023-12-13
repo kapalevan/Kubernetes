@@ -332,10 +332,6 @@
           register: upload_certs_output
           when: inventory_hostname == "master01"
 
-        # - name: Debug certificate key output
-        #   debug:
-        #     var: upload_certs_output.stdout_lines
-
     - name: Setup kubeconfig and apply CNI Plugin on the first master
       block:
         - name: Create .kube directory
@@ -443,12 +439,6 @@
             dest: "/tmp/worker_join_script.sh"
             flat: yes
           when: inventory_hostname == "master01"
-
-        # - name: Copy join file to worker nodes
-        #   copy:
-        #     src: "/tmp/worker_join_script.sh"
-        #     dest: "/tmp/worker_join_script.sh"
-        #   when: inventory_hostname != "master01"
 
         - name: Make master nodes join script executable
           command: |

@@ -34,26 +34,6 @@
         create: yes
         marker: "# {mark} ANSIBLE MANAGED BLOCK"
 
-    - name: Setup Terminal Configuration
-      blockinfile:
-        path: "~/.vimrc"
-        block: |
-          colorscheme ron
-          set tabstop=2
-          set shiftwidth=2
-          set expandtab
-        create: yes
-
-    - name: Configure Bashrc for kubectl
-      blockinfile:
-        path: "~/.bashrc"
-        block: |
-          source <(kubectl completion bash)
-          alias k=kubectl
-          alias c=clear
-          complete -F __start_kubectl k
-          force_color_prompt=yes
-
     - name: Disable Swap
       command: swapoff -a
 
@@ -78,7 +58,6 @@
             - containerd
             - kubelet
             - kubeadm
-            - kubectl
             - kubernetes-cni
 
         - name: Remove existing Kubernetes packages
@@ -88,7 +67,6 @@
             - containerd
             - kubelet
             - kubeadm
-            - kubectl
             - kubernetes-cni
             state: absent
             purge: yes
@@ -163,7 +141,6 @@
       loop:
         - kubelet
         - kubeadm
-        - kubectl
 
     - name: Install Kubernetes packages
       apt:
@@ -172,7 +149,6 @@
           - containerd
           - kubelet={{ kubernetes_version }}-00
           - kubeadm={{ kubernetes_version }}-00
-          - kubectl={{ kubernetes_version }}-00
           - kubernetes-cni
         state: present
         update_cache: yes
@@ -184,7 +160,6 @@
       loop:
         - kubelet
         - kubeadm
-        - kubectl
 
     - name: Ensure /var/lib/kubelet directory exists
       file:
@@ -287,17 +262,10 @@
         enabled: yes
         state: restarted
 
-    - name: Make master nodes join script executable
+    - name: Make worker nodes join script executable
       command: |
             chmod +x /tmp/worker_join_script.sh
 
     - name: Execute join command
       command: |
             sh /tmp/worker_join_script.sh
-
-    - name: Label worker nodes as data-plane
-      command: kubectl label node {{ item }} node-role.kubernetes.io/data-plane=true
-      loop:
-        - worker01
-        - worker02
-        - worker03
