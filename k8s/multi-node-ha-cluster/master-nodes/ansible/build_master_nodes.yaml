@@ -437,25 +437,25 @@
             dest: "/tmp/master_join_script.sh"
           when: inventory_hostname != "master01"
 
-        - name: Get join command from master01
-          fetch:
-            src: "/tmp/worker_join_script.sh"
-            dest: "/tmp/worker_join_script.sh"
-            flat: yes
-          when: inventory_hostname == "master01"
+        # - name: Get join command from master01
+        #   fetch:
+        #     src: "/tmp/worker_join_script.sh"
+        #     dest: "/tmp/worker_join_script.sh"
+        #     flat: yes
+        #   when: inventory_hostname == "master01"
 
-        - name: Copy join file to worker nodes
-          copy:
-            src: "/tmp/worker_join_script.sh"
-            dest: "/tmp/worker_join_script.sh"
+        # - name: Copy join file to worker nodes
+        #   copy:
+        #     src: "/tmp/worker_join_script.sh"
+        #     dest: "/tmp/worker_join_script.sh"
+        #   when: inventory_hostname != "master01"
+
+        - name: Make master nodes join script executable
+          command: |
+               chmod +x /tmp/master_join_script.sh
           when: inventory_hostname != "master01"
 
-        # - name: Make master nodes join script executable
-        #   command: |
-        #        chmod +x /tmp/master_join_script.sh
-        #   when: inventory_hostname == "master02", "master03"
-
-        # - name: Join other master nodes to the cluster
-        #   command: |
-        #        sh /tmp/master_join_script.sh
-        #   when: inventory_hostname == "master02", "master03"
+        - name: Join other master nodes to the cluster
+          command: |
+               sh /tmp/master_join_script.sh
+          when: inventory_hostname != "master01"
