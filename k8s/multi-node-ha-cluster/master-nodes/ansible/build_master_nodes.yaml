@@ -3,7 +3,6 @@
   vars_files:
     - vars.yaml
     - vault.yaml
-    - workers.yaml
 
   tasks:
     - name: Check Ubuntu Version
