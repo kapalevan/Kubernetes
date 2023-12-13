@@ -294,3 +294,10 @@
     - name: Execute join command
       command: |
             sh /tmp/worker_join_script.sh
+
+    - name: Label worker nodes as data-plane
+      command: kubectl label node {{ item }} node-role.kubernetes.io/data-plane=true
+      loop:
+        - worker01
+        - worker02
+        - worker03
