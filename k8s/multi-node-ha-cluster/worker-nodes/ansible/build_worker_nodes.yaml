@@ -287,7 +287,10 @@
         enabled: yes
         state: restarted
 
-    # Join command to be provided externally
+    - name: Make master nodes join script executable
+      command: |
+            chmod +x /tmp/worker_join_script.sh
+
     - name: Execute join command
-      command: "{{ join_command }}"
-      when: join_command is defined
+      command: |
+            sh /tmp/worker_join_script.sh
