@@ -1,7 +1,6 @@
----
-- name: Get Kubeconfig from Master Node
-  hosts: masters
-  gather_facts: false
+- hosts: masters
+  become: true
+  
   tasks:
     - name: Fetch kubeconfig from Kubernetes master node
       ansible.builtin.fetch:
