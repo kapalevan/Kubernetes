@@ -4,12 +4,19 @@
     - vault.yaml
 
   tasks:
-    - name: Fetch kubeconfig from Kubernetes master node
-      copy: 
-        src: ~/.kube/config
-        dest: /tmp/master1_kubeconfig
-      delegate_to: localhost
+    - name: Get kubeconfig from master01
+      fetch:
+        src: "~/.kube/config"
+        dest: "/tmp/master1_kubeconfig"
+        flat: yes
       when: inventory_hostname == "master01"
+
+    - name: copy kubeconfig locally
+      copy: 
+        src: "~/.kube/config"
+        dest: "/tmp/master1_kubeconfig"
+      delegate_to: localhost
+      when: inventory_hostname != "master01"
 
     - name: Set KUBECONFIG environment variable
       lineinfile:
