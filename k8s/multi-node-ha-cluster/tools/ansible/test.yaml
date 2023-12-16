@@ -6,10 +6,9 @@
 
   tasks:
     - name: Fetch kubeconfig from Kubernetes master node
-      ansible.builtin.fetch:
+      copy: 
         src: ~/.kube/config
         dest: /tmp/master1_kubeconfig
-        flat: yes
       delegate_to: localhost
 
     - name: Print success message
