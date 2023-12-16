@@ -45,7 +45,7 @@
         - helm
 
     - name: Set PATH for Helm
-      command: "export PATH=$PATH:/usr/local/bin/"
+      command: "ln -s /usr/local/bin/helm /home/bereja@devops.tbc/ansible/Kubernetes/k8s/multi-node-ha-cluster/tools/ansible"
 
 
     - name: Add Prometheus Helm repository
