@@ -60,19 +60,19 @@
 
     - name: Fetch kubeconfig file from master1 and set KUBECONFIG locally
       gather_facts: false
+      when: inventory_hostname == "master1"
       tasks:
         - name: Fetch kubeconfig file
           fetch:
             src: ~/.kube/config
             dest: /tmp/master1_kubeconfig
             flat: yes
-      when: inventory_hostname == "master01"
 
-    - name: Set KUBECONFIG locally
-      hosts: localhost
-      gather_facts: false
-      environment:
-        KUBECONFIG: "./master1_kubeconfig"
-      tasks:
-        - name: Check Kubernetes cluster info
-          command: kubectl cluster-info
+        - name: Set KUBECONFIG locally
+          hosts: localhost
+          gather_facts: false
+          environment:
+            KUBECONFIG: "./master1_kubeconfig"
+          tasks:
+            - name: Check Kubernetes cluster info
+              command: kubectl cluster-info
