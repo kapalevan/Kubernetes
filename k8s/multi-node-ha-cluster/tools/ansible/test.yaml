@@ -1,6 +1,9 @@
 - hosts: masters
   become: true
-  
+
+  vars_files:
+    - vault.yaml
+
   tasks:
     - name: Fetch kubeconfig from Kubernetes master node
       ansible.builtin.fetch:
