@@ -9,7 +9,8 @@
         src: "~/.kube/config"
         dest: "/tmp/master1_kubeconfig"
         flat: yes
-      when: inventory_hostname == "master01"      
+      when: inventory_hostname == "master01"
+
 
     - name: Set KUBECONFIG environment variable
       lineinfile:
@@ -17,6 +18,7 @@
         line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
         state: present
       delegate_to: localhost
+      when: inventory_hostname != "master01"
 
       
 
