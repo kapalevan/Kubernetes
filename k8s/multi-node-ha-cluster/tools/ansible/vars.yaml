@@ -1,0 +1,4 @@
+all:
+  hosts:
+    kubernetes_cluster:
+      ansible_host: <your_kubernetes_master_ip_or_hostname>
