@@ -30,7 +30,10 @@
 
     - name: Get Kubernetes Nodes
       become: true
-      command: "kubectl get nodes"
+      command: | 
+        - "{{ kubeconfig_task }}"
+        - "kubectl get nodes"
+      
 
     # - name: Install Helm
     #   become: true
@@ -58,6 +61,7 @@
         chart_ref: stable/prometheus
         release_namespace: monitoring
         create_namespace: true
+        command: "{{ kubeconfig_task }}"
 
 
 
