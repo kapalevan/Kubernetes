@@ -59,7 +59,7 @@
         - alertmanager
 
     - name: Fetch kubeconfig file from master1 and set KUBECONFIG locally
-      hosts: master1
+      hosts: master01
       gather_facts: false
       tasks:
         - name: Fetch kubeconfig file
