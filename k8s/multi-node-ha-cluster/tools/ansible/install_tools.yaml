@@ -1,7 +1,7 @@
 - hosts: masters
   become: true
   vars_files:
-    - vars.yaml
+    - vault.yaml
 
   tasks:
     - name: Fetch kubeconfig from Kubernetes master node
