@@ -13,13 +13,12 @@
 
 - hosts: localhost
   connection: local
-
-    tasks:
-      - name: Set KUBECONFIG environment variable
-        lineinfile:
-          path: /home/bereja@devops.tbc/.bashrc
-          line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
-          state: present
+  tasks:
+    - name: Set KUBECONFIG environment variable
+      lineinfile:
+        path: /home/bereja@devops.tbc/.bashrc
+        line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
+        state: present
 
 
       
