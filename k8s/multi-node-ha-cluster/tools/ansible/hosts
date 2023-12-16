@@ -1,4 +1,2 @@
 [masters]
 master01 ansible_host=3.9.3.151
-master02 ansible_host=3.9.3.152
-master03 ansible_host=3.9.3.153
