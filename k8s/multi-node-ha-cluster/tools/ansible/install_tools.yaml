@@ -16,7 +16,7 @@
         path: /home/bereja@devops.tbc/.bashrc  # Path to the user's shell profile
         line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
         state: present
-      delegate_to: localhost
+      hosts: localhost
       connection: local
 
       
