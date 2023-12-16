@@ -41,7 +41,7 @@
         - helm
 
     - name: Set PATH for Helm
-      command: "export PATH=$PATH:/usr/local/bin/"
+      command: "sudo export PATH=$PATH:/usr/local/bin/"
 
 
     - name: Add Prometheus Helm repository
