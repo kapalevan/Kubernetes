@@ -13,10 +13,6 @@
 
 - hosts: localhost
   connection: local
-  become: true
-  become_user: bereja
-  become_method: sudo
-  become_password: "Blockbuster213@"
   tasks:
     - name: Set KUBECONFIG environment variable
       lineinfile:
@@ -24,16 +20,16 @@
         line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
         state: present   
 
-    - name: Install Helm
-      become: true
-      apt:
-        name: "{{ item }}"
-        state: present
-      with_items:
-        - wget
-        - tar
-      tags:
-        - helm
+    # - name: Install Helm
+    #   become: true
+    #   apt:
+    #     name: "{{ item }}"
+    #     state: present
+    #   with_items:
+    #     - wget
+    #     - tar
+    #   tags:
+    #     - helm
 
     - name: Download and install Helm
       become: true
