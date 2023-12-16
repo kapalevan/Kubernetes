@@ -40,6 +40,10 @@
       tags:
         - helm
 
+    - name: Set PATH for Helm
+      command: "export PATH=$PATH:/usr/local/bin/helm && helm repo add prometheus-community https://prometheus-community.github.io/helm-charts"
+
+
     - name: Add Prometheus Helm repository
       become: true
       command: /usr/local/bin/helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
