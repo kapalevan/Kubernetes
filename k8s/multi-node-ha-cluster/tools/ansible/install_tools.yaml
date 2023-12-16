@@ -11,28 +11,28 @@
         flat: yes
       when: inventory_hostname == "master01"
 
-    - name: copy kubeconfig locally
-      copy: 
-        src: "~/.kube/config"
-        dest: "/tmp/master1_kubeconfig"
-      delegate_to: localhost
-      when: inventory_hostname != "master01"
+    # - name: copy kubeconfig locally
+    #   copy: 
+    #     src: "~/.kube/config"
+    #     dest: "/tmp/master1_kubeconfig"
+    #   delegate_to: localhost
+    #   when: inventory_hostname != "master01"
       
 
-    - name: Set KUBECONFIG environment variable
-      lineinfile:
-        path: /home/bereja@devops.tbc/.bashrc  # Path to the user's shell profile
-        line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
-        state: present
-        when: inventory_hostname != "master01"
+    # - name: Set KUBECONFIG environment variable
+    #   lineinfile:
+    #     path: /home/bereja@devops.tbc/.bashrc  # Path to the user's shell profile
+    #     line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
+    #     state: present
+    #     when: inventory_hostname != "master01"
       
 
-    # - name: Set KUBECONFIG locally
-    #   
-    #   environment:
-    #     KUBECONFIG: "./master1_kubeconfig"
-    #   command: 
-    #     - kubectl cluster-info
+    - name: Set KUBECONFIG locally
+      
+      environment:
+        KUBECONFIG: "/tmp/master1_kubeconfig"
+      command: 
+        - kubectl cluster-info
 
     # - name: Install Helm
     #   become: true
