@@ -25,13 +25,16 @@
       shell: |
         echo 'export KUBECONFIG=/tmp/master1_kubeconfig' >> /home/bereja@devops.tbc/.bashrc
         source /home/bereja@devops.tbc/.bashrc
+        kubectl get nodes
       args:
         executable: /bin/bash
-      command: kubectl get nodes
+      register: kubeconfig_result
 
-    # - name: Get Kubernetes Nodes
-    #   become: true
-    #   command: kubectl get nodes
+    - name: Get Kubernetes Nodes
+      become: true
+      command: kubectl get nodes
+      environment:
+        KUBECONFIG: "{{ kubeconfig_result.stdout }}"
 
     # - name: Install Helm
     #   become: true
