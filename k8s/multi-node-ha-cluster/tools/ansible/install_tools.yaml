@@ -20,16 +20,16 @@
         line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
         state: present   
 
-    - name: Install Helm
-      become: true
-      apt:
-        name: "{{ item }}"
-        state: present
-      with_items:
-        - wget
-        - tar
-      tags:
-        - helm
+    # - name: Install Helm
+    #   become: true
+    #   apt:
+    #     name: "{{ item }}"
+    #     state: present
+    #   with_items:
+    #     - wget
+    #     - tar
+    #   tags:
+    #     - helm
 
     - name: Download and install Helm
       become: true
@@ -51,7 +51,7 @@
       command: helm repo update
       tags:
         - helm
-        
+
     - name: Create namespace for Prometheus
       become: true      
       command: kubectl create namespace prometheus
