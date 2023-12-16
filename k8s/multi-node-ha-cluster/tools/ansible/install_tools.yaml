@@ -103,7 +103,7 @@
             chmod +x /tmp/kubernetes-dashboard.yaml
 
     - name: deploy Kubernetes Dashboard YAML
-      commnad: | 
+      shell: | 
         {{ kubeconfig_task }} 
         "kubectl apply -f /tmp/kubernetes-dashboard.yaml
       args:
