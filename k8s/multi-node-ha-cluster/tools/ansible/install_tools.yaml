@@ -30,7 +30,7 @@
 
     - name: Get Kubernetes Nodes
       become: true
-      command: | 
+      shell: | 
         - "{{ kubeconfig_task }}"
         - "kubectl get nodes"
       
