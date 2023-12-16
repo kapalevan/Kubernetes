@@ -11,7 +11,7 @@
         flat: yes
 
     # - name: Set KUBECONFIG locally
-    #   when: inventory_hostname == "localhost"
+    #   when: inventory_hostname != "master01"
     #   environment:
     #     KUBECONFIG: "./master1_kubeconfig"
     #   command: 
@@ -19,7 +19,7 @@
 
     - name: Install Helm
       become: true
-      when: inventory_hostname == "localhost"
+      when: inventory_hostname != "master01"
       apt:
         name: "{{ item }}"
         state: present
@@ -31,7 +31,7 @@
 
     - name: Download and install Helm
       become: true
-      when: inventory_hostname == "localhost"
+      when: inventory_hostname != "master01"
       shell: |
         wget https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz
         tar -zxvf helm-v3.8.1-linux-amd64.tar.gz
@@ -41,41 +41,41 @@
 
     - name: Add Prometheus Helm repository
       become: true
-      when: inventory_hostname == "localhost"
+      when: inventory_hostname != "master01"
       command: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
       tags:
         - helm
 
     - name: Update Helm repositories
       become: true
-      when: inventory_hostname == "localhost"
+      when: inventory_hostname != "master01"
       command: helm repo update
       tags:
         - helm
 
     - name: Create namespace for Prometheus
       become: true
-      when: inventory_hostname == "localhost"
+      when: inventory_hostname != "master01"
       command: kubectl create namespace prometheus
       ignore_errors: yes
 
     - name: Deploy Prometheus
       become: true
-      when: inventory_hostname == "localhost"
+      when: inventory_hostname != "master01"
       command: helm install prometheus prometheus-community/prometheus -n prometheus
       tags:
         - prometheus
 
     - name: Deploy kube-state-metrics
       become: true
-      when: inventory_hostname == "localhost"
+      when: inventory_hostname != "master01"
       command: helm install kube-state-metrics prometheus-community/kube-state-metrics -n prometheus
       tags:
         - kube-state-metrics
 
     - name: Deploy Alertmanager
       become: true
-      when: inventory_hostname == "localhost"
+      when: inventory_hostname != "master01"
       command: helm install alertmanager prometheus-community/alertmanager -n prometheus
       tags:
         - alertmanager
