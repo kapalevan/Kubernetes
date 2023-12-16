@@ -28,13 +28,16 @@
         kubectl get nodes
       args:
         executable: /bin/bash
-      register: kubeconfig_result
+      vars: 
+        kubeconfig_path: "/tmp/master1_kubeconfig"
+        home_directory: "/home/bereja@devops.tbc"
 
     - name: Get Kubernetes Nodes
       become: true
       command: kubectl get nodes
-      environment:
-        KUBECONFIG: "{{ kubeconfig_result.stdout }}"
+      vars: 
+        kubeconfig_path: "/tmp/master1_kubeconfig"
+        home_directory: "/home/bereja@devops.tbc"
 
     # - name: Install Helm
     #   become: true
