@@ -105,6 +105,6 @@
     - name: deploy Kubernetes Dashboard YAML
       shell: | 
         {{ kubeconfig_task }} 
-        "kubectl apply -f /tmp/kubernetes-dashboard.yaml
+        kubectl apply -f /tmp/kubernetes-dashboard.yaml
       args:
         executable: /bin/bash
