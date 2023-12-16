@@ -65,7 +65,7 @@
         - name: Fetch kubeconfig file
           fetch:
             src: ~/.kube/config
-            dest: ./master1_kubeconfig
+            dest: /tmp/master1_kubeconfig
             flat: yes
 
     - name: Set KUBECONFIG locally
