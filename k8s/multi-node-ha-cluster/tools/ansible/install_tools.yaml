@@ -59,7 +59,6 @@
         - alertmanager
 
     - name: Fetch kubeconfig file from master1 and set KUBECONFIG locally
-      gather_facts: false
       when: inventory_hostname == "master1"
       tasks:
         - name: Fetch kubeconfig file
@@ -70,7 +69,6 @@
 
         - name: Set KUBECONFIG locally
           hosts: localhost
-          gather_facts: false
           environment:
             KUBECONFIG: "./master1_kubeconfig"
           tasks:
