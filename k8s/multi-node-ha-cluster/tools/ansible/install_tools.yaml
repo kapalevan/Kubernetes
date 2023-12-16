@@ -31,8 +31,8 @@
     - name: Get Kubernetes Nodes
       become: true
       shell: | 
-        - "{{ kubeconfig_task }}"
-        - "kubectl get nodes"
+        {{ kubeconfig_task }}
+        kubectl get nodes
       
 
     # - name: Install Helm
