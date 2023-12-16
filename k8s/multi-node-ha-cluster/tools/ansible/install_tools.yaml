@@ -59,13 +59,13 @@
         - alertmanager
 
     - name: Fetch kubeconfig file from master1 and set KUBECONFIG locally
-      when: inventory_hostname == "master1"
       tasks:
         - name: Fetch kubeconfig file
           fetch:
             src: ~/.kube/config
             dest: /tmp/master1_kubeconfig
             flat: yes
+          when: inventory_hostname == "master1"
 
         - name: Set KUBECONFIG locally
           hosts: localhost
