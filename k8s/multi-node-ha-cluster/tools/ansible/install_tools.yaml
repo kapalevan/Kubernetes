@@ -13,6 +13,10 @@
 
 - hosts: localhost
   connection: local
+  become: true
+  become_user: bereja
+  become_method: sudo
+  become_password: "Blockbuster213@"
   tasks:
     - name: Set KUBECONFIG environment variable
       lineinfile:
