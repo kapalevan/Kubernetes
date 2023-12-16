@@ -15,11 +15,18 @@
   connection: local
   become: true
   tasks:
-    - name: Set KUBECONFIG environment variable
-      lineinfile:
-        path: /home/bereja@devops.tbc/.bashrc
-        line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
-        state: present   
+    # - name: Set KUBECONFIG environment variable
+    #   lineinfile:
+    #     path: /home/bereja@devops.tbc/.bashrc
+    #     line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
+    #     state: present   
+
+    - name: Set KUBECONFIG environment variable and source .bashrc
+      shell: |
+        echo 'export KUBECONFIG=/tmp/master1_kubeconfig' >> /home/bereja@devops.tbc/.bashrc
+        source /home/bereja@devops.tbc/.bashrc
+      args:
+        executable: /bin/bash
 
     - name: Get Kubernetes Nodes
       become: true
