@@ -53,7 +53,7 @@
 
     - name: Add Prometheus Helm repository
       become: true
-      command: /tmp/ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+      command: /tmp/helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
       tags:
         - helm
 
