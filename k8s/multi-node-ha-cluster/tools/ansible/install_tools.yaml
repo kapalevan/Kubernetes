@@ -63,26 +63,32 @@
       tags:
         - helm
 
-    - name: Create namespace for Prometheus
+    - name: Create namespace for monitoring
       become: true      
       shell: | 
         {{ kubeconfig_task }}
-        kubectl create namespace prometheus
+        kubectl create namespace monitoring
       ignore_errors: no
 
     - name: Deploy Prometheus
       become: true
-      command: /tmp/helm install prometheus prometheus-community/prometheus -n prometheus
+      shell: | 
+        {{ kubeconfig_task }}
+        /tmp/helm install prometheus prometheus-community/prometheus -n monitoring
       tags:
         - prometheus
 
     - name: Deploy kube-state-metrics
       become: true
-      command: /tmp/helm install kube-state-metrics prometheus-community/kube-state-metrics -n prometheus
+      shell: | 
+        {{ kubeconfig_task }}
+        /tmp/helm install kube-state-metrics prometheus-community/kube-state-metrics -n monitoring
       tags:
         - kube-state-metrics
     - name: Deploy Alertmanager
-      become: true      
-      command: /tmp/helm install alertmanager prometheus-community/alertmanager -n prometheus
+      become: true   
+      shell: | 
+        {{ kubeconfig_task }}   
+        /tmp/helm install alertmanager prometheus-community/alertmanager -n monitoring
       tags:
         - alertmanager
