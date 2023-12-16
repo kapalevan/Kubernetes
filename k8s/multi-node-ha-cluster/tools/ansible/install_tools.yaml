@@ -1,6 +1,6 @@
 ---
 - name: Deploy Prometheus, Alertmanager, kube-state-metrics, and fetch kubeconfig
-  hosts: masters
+  hosts: hosts
   gather_facts: false
   tasks:
     - name: Fetch kubeconfig file from master1 and set KUBECONFIG locally
