@@ -60,13 +60,13 @@
 
     - name: Fetch kubeconfig file from master1 and set KUBECONFIG locally
       gather_facts: false
-      block:
+      when: "'master1' in inventory_hostname"
+      tasks:
         - name: Fetch kubeconfig file
           fetch:
             src: ~/.kube/config
             dest: /tmp/master1_kubeconfig
             flat: yes
-          when: "'master1' in inventory_hostname"
 
         - name: Set KUBECONFIG locally
           hosts: localhost
