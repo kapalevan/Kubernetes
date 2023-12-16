@@ -18,71 +18,57 @@
       lineinfile:
         path: /home/bereja@devops.tbc/.bashrc
         line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
+        state: present   
+
+    - name: Install Helm
+      become: true
+      apt:
+        name: "{{ item }}"
         state: present
+      with_items:
+        - wget
+        - tar
+      tags:
+        - helm
 
+    - name: Download and install Helm
+      become: true
+      shell: |
+        wget https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz
+        tar -zxvf helm-v3.8.1-linux-amd64.tar.gz
+        mv linux-amd64/helm /usr/local/bin/helm
+      tags:
+        - helm
 
+    - name: Add Prometheus Helm repository
+      become: true
+      command: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+      tags:
+        - helm
+    - name: Update Helm repositories
+      become: true
       
+      command: helm repo update
+      tags:
+        - helm
+    - name: Create namespace for Prometheus
+      become: true      
+      command: kubectl create namespace prometheus
+      ignore_errors: yes
 
+    - name: Deploy Prometheus
+      become: true
+      command: helm install prometheus prometheus-community/prometheus -n prometheus
+      tags:
+        - prometheus
 
-    # - name: Install Helm
-    #   become: true
-      
-    #   apt:
-    #     name: "{{ item }}"
-    #     state: present
-    #   with_items:
-    #     - wget
-    #     - tar
-    #   tags:
-    #     - helm
-
-    # - name: Download and install Helm
-    #   become: true
-      
-    #   shell: |
-    #     wget https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz
-    #     tar -zxvf helm-v3.8.1-linux-amd64.tar.gz
-    #     mv linux-amd64/helm /usr/local/bin/helm
-    #   tags:
-    #     - helm
-
-    # - name: Add Prometheus Helm repository
-    #   become: true
-      
-    #   command: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    #   tags:
-    #     - helm
-
-    # - name: Update Helm repositories
-    #   become: true
-      
-    #   command: helm repo update
-    #   tags:
-    #     - helm
-
-    # - name: Create namespace for Prometheus
-    #   become: true
-      
-    #   command: kubectl create namespace prometheus
-    #   ignore_errors: yes
-
-    # - name: Deploy Prometheus
-    #   become: true
-      
-    #   command: helm install prometheus prometheus-community/prometheus -n prometheus
-    #   tags:
-    #     - prometheus
-
-    # - name: Deploy kube-state-metrics
-    #   become: true
-      
-    #   command: helm install kube-state-metrics prometheus-community/kube-state-metrics -n prometheus
-    #   tags:
-    #     - kube-state-metrics
-
-    # - name: Deploy Alertmanager
-    #   become: true
-      
-    #   command: helm install alertmanager prometheus-community/alertmanager -n prometheus
-    #   tags:
-    #     - alertmanager
+    - name: Deploy kube-state-metrics
+      become: true
+      command: helm install kube-state-metrics prometheus-community/kube-state-metrics -n prometheus
+      tags:
+        - kube-state-metrics
+    - name: Deploy Alertmanager
+      become: true      
+      command: helm install alertmanager prometheus-community/alertmanager -n prometheus
+      tags:
+        - alertmanager
