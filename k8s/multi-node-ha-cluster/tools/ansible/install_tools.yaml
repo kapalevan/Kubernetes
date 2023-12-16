@@ -20,6 +20,15 @@
         line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
         state: present   
 
+    - name: Get Kubernetes Nodes
+      become: true
+      command: kubectl get nodes
+      register: kubectl_output
+      changed_when: false
+
+    - debug:
+        var: kubectl_output.stdout_lines
+
     # - name: Install Helm
     #   become: true
     #   apt:
@@ -31,21 +40,21 @@
     #   tags:
     #     - helm
 
-    - name: Download and install Helm
-      become: true
-      shell: |
-        wget https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz
-        tar -zxvf helm-v3.8.1-linux-amd64.tar.gz
-        mv linux-amd64/helm /usr/local/bin/helm
-      tags:
-        - helm
+    # - name: Download and install Helm
+    #   become: true
+    #   shell: |
+    #     wget https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz
+    #     tar -zxvf helm-v3.8.1-linux-amd64.tar.gz
+    #     mv linux-amd64/helm /usr/local/bin/helm
+    #   tags:
+    #     - helm
 
-    - name: Deploy latest version of Prometheus chart inside monitoring namespace (and create it)
-      kubernetes.core.helm:
-        name: test
-        chart_ref: stable/prometheus
-        release_namespace: monitoring
-        create_namespace: true
+    # - name: Deploy latest version of Prometheus chart inside monitoring namespace (and create it)
+    #   kubernetes.core.helm:
+    #     name: test
+    #     chart_ref: stable/prometheus
+    #     release_namespace: monitoring
+    #     create_namespace: true
 
 
 
