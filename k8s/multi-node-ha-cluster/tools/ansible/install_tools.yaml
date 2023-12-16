@@ -16,7 +16,8 @@
         path: /home/bereja@devops.tbc/.bashrc  # Path to the user's shell profile
         line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
         state: present
-        when: inventory_hostname != "master01"
+      delegate_to: localhost
+
       
 
 
