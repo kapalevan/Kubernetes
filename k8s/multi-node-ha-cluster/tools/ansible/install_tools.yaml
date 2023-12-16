@@ -69,6 +69,5 @@
       when: inventory_hostname == "localhost"
       environment:
         KUBECONFIG: "./master1_kubeconfig"
-      tasks:
-        - name: Check Kubernetes cluster info
-          command: kubectl cluster-info
+      command: 
+        - kubectl cluster-info
