@@ -24,16 +24,13 @@
     #     state: present   
 
     - name: Set KUBECONFIG environment variable and source .bashrc
-      shell: |
-        echo 'export KUBECONFIG=/tmp/master1_kubeconfig' >> /home/bereja@devops.tbc/.bashrc
-        source /home/bereja@devops.tbc/.bashrc
-        kubectl get nodes
+      shell: "{{ kubeconfig_task }}"
       args:
         executable: /bin/bash
 
     - name: Get Kubernetes Nodes
       become: true
-      command: kubectl get nodes
+      command: "{{ kubeconfig_task }} && kubectl get nodes"
 
     # - name: Install Helm
     #   become: true

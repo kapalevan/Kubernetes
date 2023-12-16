@@ -1,2 +1,3 @@
-kubeconfig_path: "/tmp/master1_kubeconfig"
-home_directory: "/home/bereja@devops.tbc"
+kubeconfig_task: |
+  echo 'export KUBECONFIG=/tmp/master1_kubeconfig' >> /home/bereja@devops.tbc/.bashrc
+  source /home/bereja@devops.tbc/.bashrc
