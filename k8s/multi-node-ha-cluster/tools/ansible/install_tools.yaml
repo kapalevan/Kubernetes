@@ -14,6 +14,8 @@
 - hosts: localhost
   connection: local
   become: true
+  vars_files:
+    - vars.yaml
   tasks:
     # - name: Set KUBECONFIG environment variable
     #   lineinfile:
@@ -28,16 +30,10 @@
         kubectl get nodes
       args:
         executable: /bin/bash
-      vars: 
-        kubeconfig_path: "/tmp/master1_kubeconfig"
-        home_directory: "/home/bereja@devops.tbc"
 
     - name: Get Kubernetes Nodes
       become: true
       command: kubectl get nodes
-      vars: 
-        kubeconfig_path: "/tmp/master1_kubeconfig"
-        home_directory: "/home/bereja@devops.tbc"
 
     # - name: Install Helm
     #   become: true
