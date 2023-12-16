@@ -35,25 +35,25 @@
         kubectl get nodes
       
 
-    # - name: Download and install Helm
-    #   become: true
-    #   shell: |
-    #     wget https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz
-    #     tar -zxvf helm-v3.8.1-linux-amd64.tar.gz
-    #     mv linux-amd64/helm /usr/local/bin/helm
-    #   tags:
-    #     - helm
+    - name: Download and install Helm
+      become: true
+      shell: |
+        wget https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz
+        tar -zxvf helm-v3.8.1-linux-amd64.tar.gz
+        mv linux-amd64/helm /tmp/helm
+      tags:
+        - helm
 
     # - name: Set PATH for Helm
     #   command: "ln -s /usr/local/bin/helm /home/bereja@devops.tbc/ansible/Kubernetes/k8s/multi-node-ha-cluster/tools/ansible"
 
     - name: Make helm executable
       command: |
-            chmod +x /usr/local/bin/helm
+            chmod +x /tmp/helm
 
     - name: Add Prometheus Helm repository
       become: true
-      command: /usr/local/bin/ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+      command: /tmp/ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
       tags:
         - helm
 
