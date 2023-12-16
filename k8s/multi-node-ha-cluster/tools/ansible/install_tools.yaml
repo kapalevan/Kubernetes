@@ -13,6 +13,7 @@
 
 - hosts: localhost
   connection: local
+  become: true
   tasks:
     - name: Set KUBECONFIG environment variable
       lineinfile:
