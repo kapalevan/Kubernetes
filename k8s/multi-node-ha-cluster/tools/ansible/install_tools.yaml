@@ -92,3 +92,13 @@
         /tmp/helm install alertmanager prometheus-community/alertmanager -n monitoring
       tags:
         - alertmanager
+
+    - name: Download Kubernetes Dashboard YAML
+      get_url:
+        url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.5.0/aio/deploy/recommended.yaml"
+        dest: "/tmp/kubernetes-dashboard.yaml"
+
+    - name: deploy Kubernetes Dashboard YAML
+      shell: | 
+        {{ kubeconfig_task }} 
+        "kubectl apply -f /tmp/kubernetes-dashboard.yaml"
