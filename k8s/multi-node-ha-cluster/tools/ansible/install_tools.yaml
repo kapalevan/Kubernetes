@@ -4,19 +4,19 @@
     - vars.yaml
 
   tasks:
-    - name: Fetch kubeconfig file from master1 and set KUBECONFIG locally
-      when: inventory_hostname == "master01"
-      fetch:
+    - name: Fetch kubeconfig from Kubernetes master node
+      copy: 
         src: ~/.kube/config
         dest: /tmp/master1_kubeconfig
-        flat: yes
+      delegate_to: localhost
+      when: inventory_hostname == "master01"
 
-    # - name: Set KUBECONFIG locally
-    #   when: inventory_hostname != "master01"
-    #   environment:
-    #     KUBECONFIG: "./master1_kubeconfig"
-    #   command: 
-    #     - kubectl cluster-info
+    - name: Set KUBECONFIG locally
+      when: inventory_hostname != "master01"
+      environment:
+        KUBECONFIG: "./master1_kubeconfig"
+      command: 
+        - kubectl cluster-info
 
     - name: Install Helm
       become: true
