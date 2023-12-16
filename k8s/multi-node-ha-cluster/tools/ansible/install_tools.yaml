@@ -27,10 +27,11 @@
         source /home/bereja@devops.tbc/.bashrc
       args:
         executable: /bin/bash
-
-    - name: Get Kubernetes Nodes
-      become: true
       command: kubectl get nodes
+
+    # - name: Get Kubernetes Nodes
+    #   become: true
+    #   command: kubectl get nodes
 
     # - name: Install Helm
     #   become: true
