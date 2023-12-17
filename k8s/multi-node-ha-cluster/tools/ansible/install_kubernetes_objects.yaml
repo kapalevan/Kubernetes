@@ -79,33 +79,3 @@
     #     kubectl apply -f beeline_metric_server.yaml -n kube-system
     #   args:
     #     executable: /bin/bash
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-    - name: Download Kubernetes Dashboard YAML
-      get_url:
-        url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.5.0/aio/deploy/recommended.yaml"
-        dest: "/tmp/kubernetes-dashboard.yaml"
-
-    - name: give permissions to kubernetes-dashboard.yaml
-      command: |
-            chmod +x /tmp/kubernetes-dashboard.yaml
-
-    - name: deploy Kubernetes Dashboard YAML
-      shell: | 
-        {{ kubeconfig_task }} 
-        kubectl apply -f /tmp/kubernetes-dashboard.yaml
-      args:
-        executable: /bin/bash
