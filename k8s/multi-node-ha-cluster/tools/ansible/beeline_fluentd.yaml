@@ -14,8 +14,8 @@ metadata:
     app.kubernetes.io/name: fluentd-elasticsearch
     app.kubernetes.io/version: 3.0.4
     helm.sh/chart: fluentd-elasticsearch-10.0.0
-name: fluentd-elasticsearch
-namespace: elk
+  name: fluentd-elasticsearch
+  namespace: elk
 spec:
   revisionHistoryLimit: 10
   selector:
