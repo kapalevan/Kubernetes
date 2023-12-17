@@ -73,6 +73,24 @@
       args:
         executable: /bin/bash
 
+    - name: Check Kubernetes Dashboard Pod Readiness
+      shell: |
+        {{ kubeconfig_task }}
+        namespace="kubernetes-dashboard"
+        pod_list=$(kubectl get pods -n $namespace --output=jsonpath='{.items[*].metadata.name}')
+        
+        for pod_name in $pod_list; do
+          readiness_status=$(kubectl get pod -n $namespace $pod_name -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
+          if [ "$readiness_status" == "True" ]; then
+            echo "Pod $pod_name in namespace $namespace is ready."
+          else
+            echo "Pod $pod_name in namespace $namespace is not ready."
+            exit 1  # You can choose to fail the task if any pod is not ready
+          fi
+        done
+      args:
+        executable: /bin/bash
+
       
     # - name: deploy fluentd
     #   shell: | 
