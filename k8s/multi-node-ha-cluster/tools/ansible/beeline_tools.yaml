@@ -1,6 +1,6 @@
 ---
-kind: Deployment
 apiVersion: apps/v1
+kind: Deployment
 metadata:
 annotations:
   deployment.kubernetes.io/revision: "1"
@@ -105,9 +105,8 @@ template:
     - emptyDir: {}
       name: storage-volume
 ---
-
-kind: Deployment
 apiVersion: apps/v1
+kind: Deployment
 metadata:
 annotations:
   deployment.kubernetes.io/revision: "1"
@@ -165,8 +164,8 @@ template:
     serviceAccountName: prometheus-kube-state-metrics
     terminationGracePeriodSeconds: 30
 ---
-kind: Deployment
 apiVersion: apps/v1
+kind: Deployment
 metadata:
 annotations:
   deployment.kubernetes.io/revision: "1"
@@ -234,8 +233,8 @@ template:
     terminationGracePeriodSeconds: 30
 
 ---
-kind: Deployment
 apiVersion: apps/v1
+kind: Deployment
 metadata:
 annotations:
   deployment.kubernetes.io/revision: "1"
@@ -348,8 +347,8 @@ template:
 
 ---
 
-kind: Deployment
 apiVersion: apps/v1
+kind: Deployment
 metadata:
   annotations:
     deployment.kubernetes.io/revision: "3"
@@ -466,8 +465,8 @@ spec:
         name: metrics-server-config-volume
 
 ---
-kind: Deployment
 apiVersion: apps/v1
+kind: Deployment
 metadata:
   annotations:
     deployment.kubernetes.io/revision: "1"
@@ -535,9 +534,8 @@ spec:
 
 ---
 
-
-kind: Deployment
 apiVersion: apps/v1
+kind: Deployment
 metadata:
   annotations:
     deployment.kubernetes.io/revision: "1"
@@ -613,8 +611,8 @@ spec:
         name: tmp-volume
 
 ---
-kind: DaemonSet
 apiVersion: apps/v1
+kind: DaemonSet
 metadata:
   annotations:
     deprecated.daemonset.template.generation: "1"
@@ -689,9 +687,8 @@ spec:
       maxUnavailable: 1
     type: RollingUpdate
 ---
-
+apiVersion: apps/v1
 kind: DaemonSet
-piVersion: apps/v1
 metadata:
   annotations:
     deprecated.daemonset.template.generation: "28"
@@ -874,8 +871,8 @@ spec:
     type: RollingUpdate
 
 ---
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
 labels:
   app: prometheus
@@ -899,9 +896,8 @@ sessionAffinity: None
 type: ClusterIP
 
 ---
-
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
 annotations:
   prometheus.io/scrape: "true"
@@ -928,9 +924,8 @@ sessionAffinity: None
 type: ClusterIP
 
 ---
-
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
 annotations:
   prometheus.io/scrape: "true"
@@ -956,8 +951,8 @@ selector:
 sessionAffinity: None
 type: ClusterIP
 ---
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
 annotations:
   prometheus.io/probe: pushgateway
@@ -982,9 +977,8 @@ selector:
 sessionAffinity: None
 type: ClusterIP
 ---
-
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
 labels:
   app: prometheus
