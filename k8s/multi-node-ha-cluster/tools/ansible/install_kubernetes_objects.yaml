@@ -61,10 +61,10 @@
             chmod +x /tmp/kubernetes-dashboard.yaml
 
     - name: Replace API server host in YAML file
-      replace:
-        path: /tmp/kubernetes-dashboard.yaml
-        regexp: '^(apiserver-host=)(http://)my-address(:port)$'
-        replace: '\1https://api-server.devops.tbc:6443 '
+      shell: |
+        sed -i 's|apiserver-host=http://my-address:port|apiserver-host=https://api-server.devops.tbc:6443|' /tmp/kubernetes-dashboard.yaml
+      args:
+        executable: /bin/bash
 
     - name: deploy Kubernetes Dashboard YAML
       shell: | 
