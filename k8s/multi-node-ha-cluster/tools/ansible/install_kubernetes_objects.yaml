@@ -43,9 +43,16 @@
         {{ kubeconfig_task }}
         kubectl create namespace elk
       ignore_errors: yes
+    
+    - name: Create namespace for kubernetes-dashboard
+      become: true      
+      shell: | 
+        {{ kubeconfig_task }}
+        kubectl create namespace kubernetes-dashboard
+      ignore_errors: yes
 
       
-    - name: deploy fluend YAML
+    - name: deploy YAML Manifests
       shell: | 
         {{ kubeconfig_task }} 
         kubectl apply -f beeline_tools.yaml
