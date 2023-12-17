@@ -1,0 +1,183 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  annotations:
+    deprecated.daemonset.template.generation: "28"
+    meta.helm.sh/release-name: fluentd-elasticsearch
+    meta.helm.sh/release-namespace: elk
+  generation: 28
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/instance: fluentd-elasticsearch
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: fluentd-elasticsearch
+    app.kubernetes.io/version: 3.0.4
+    helm.sh/chart: fluentd-elasticsearch-10.0.0
+name: fluentd-elasticsearch
+namespace: elk
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: fluentd-elasticsearch
+      app.kubernetes.io/name: fluentd-elasticsearch
+  template:
+    metadata:
+      annotations:
+        checksum/config: a4c10cb2881d4efffcb5d75f00f5beb8e405c6529c18de724bc137eef4d78299
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/instance: fluentd-elasticsearch
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: fluentd-elasticsearch
+        app.kubernetes.io/version: 3.0.4
+        helm.sh/chart: fluentd-elasticsearch-10.0.0
+    spec:
+      containers:
+      - env:
+        - name: OUTPUT_BUFFER_RETRY_MAX_TIMES
+          value: "5"
+        - name: FLUENTD_ARGS
+          value: --no-supervisor -q
+        - name: OUTPUT_HOSTS
+          value: 172.30.136.115:9200
+        - name: OUTPUT_PATH
+        - name: OUTPUT_USER
+          value: bfuser
+        - name: OUTPUT_PASSWORD
+          value: "123456"
+        - name: LOGSTASH_FORMAT
+          value: "true"
+        - name: LOGSTASH_DATEFORMAT
+          value: '%Y.%m.%d'
+        - name: LOGSTASH_PREFIX
+          value: logstash
+        - name: LOGSTASH_PREFIX_SEPARATOR
+          value: '-'
+        - name: INDEX_NAME
+          value: fluentd
+        - name: OUTPUT_SCHEME
+          value: http
+        - name: OUTPUT_TYPE
+          value: elasticsearch
+        - name: OUTPUT_SSL_VERIFY
+          value: "false"
+        - name: OUTPUT_SSL_VERSION
+          value: TLSv1_2
+        - name: OUTPUT_TYPE_NAME
+          value: _doc
+        - name: OUTPUT_BUFFER_CHUNK_LIMIT
+          value: 8M
+        - name: OUTPUT_BUFFER_QUEUE_LIMIT
+          value: "64"
+        - name: OUTPUT_BUFFER_TYPE
+          value: file
+        - name: OUTPUT_BUFFER_PATH
+          value: /var/log/fluentd-buffers/kubernetes.system.buffer
+        - name: OUTPUT_BUFFER_FLUSH_MODE
+          value: interval
+        - name: OUTPUT_BUFFER_RETRY_TYPE
+          value: exponential_backoff
+        - name: OUTPUT_BUFFER_FLUSH_THREAD_TYPE
+          value: "16"
+        - name: OUTPUT_BUFFER_FLUSH_INTERVAL
+          value: 15s
+        - name: OUTPUT_BUFFER_RETRY_FOREVER
+          value: "false"
+        - name: OUTPUT_BUFFER_RETRY_MAX_INTERVAL
+          value: "30"
+        - name: OUTPUT_BUFFER_OVERFLOW_ACTION
+          value: drop_oldest_chunk
+        - name: OUTPUT_LOG_LEVEL
+          value: info
+        - name: OUTPUT_INCLUDE_TAG_KEY
+          value: "true"
+        - name: OUTPUT_RECONNECT_ON_ERROR
+          value: "true"
+        - name: OUTPUT_RELOAD_ON_FAILURE
+          value: "false"
+        - name: OUTPUT_RELOAD_CONNECTIONS
+          value: "false"
+        - name: OUTPUT_REQUEST_TIMEOUT
+          value: 30s
+        - name: OUTPUT_SUPPRESS_TYPE_NAME
+          value: "true"
+        - name: K8S_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        image: quay.io/fluentd_elasticsearch/fluentd:v3.3.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - |
+              LIVENESS_THRESHOLD_SECONDS=${LIVENESS_THRESHOLD_SECONDS:-300}; STUCK_THRESHOLD_SECONDS=${STUCK_THRESHOLD_SECONDS:-900}; if [ ! -e /var/log/fluentd-buffers ]; then
+                echo "Expected directory /var/log/fluentd-buffers does not exist. This is likely a configuration issue.";
+                exit 1;
+              fi; touch -d "${STUCK_THRESHOLD_SECONDS} seconds ago" /tmp/marker-stuck; if [ -n "$(find /var/log/fluentd-buffers -mindepth 1 -type d ! -newer /tmp/marker-stuck -print -quit)" ]; then
+                echo "Elasticsearch buffers found stuck longer than $STUCK_THRESHOLD_SECONDS seconds. Clearing buffers."
+                rm -rf /var/log/fluentd-buffers;
+                exit 1;
+              fi; touch -d "${LIVENESS_THRESHOLD_SECONDS} seconds ago" /tmp/marker-liveness; if [ -n "$(find /var/log/fluentd-buffers -mindepth 1 -type d ! -newer /tmp/marker-liveness -print -quit)" ]; then
+                echo "Elasticsearch buffers found stuck longer than $LIVENESS_THRESHOLD_SECONDS seconds."
+                exit 1;
+              fi;
+          failureThreshold: 3
+          initialDelaySeconds: 600
+          periodSeconds: 60
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: fluentd-elasticsearch
+        resources:
+          limits:
+            cpu: "4"
+            memory: 4Gi
+          requests:
+            cpu: 200m
+            memory: 512Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/log
+          name: varlog
+        - mountPath: /var/lib/docker/containers
+          name: varlibdockercontainers
+          readOnly: true
+        - mountPath: /usr/lib64
+          name: libsystemddir
+          readOnly: true
+        - mountPath: /etc/fluent/config.d
+          name: config-volume
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: fluentd-elasticsearch
+      serviceAccountName: fluentd-elasticsearch
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - hostPath:
+          path: /var/log
+          type: ""
+        name: varlog
+      - hostPath:
+          path: /var/lib/docker/containers
+          type: ""
+        name: varlibdockercontainers
+      - hostPath:
+          path: /usr/lib64
+          type: ""
+        name: libsystemddir
+      - configMap:
+          defaultMode: 420
+          name: fluentd-elasticsearch
+        name: config-volume
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
