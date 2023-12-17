@@ -358,8 +358,8 @@ metadata:
     k8s-app: metrics-server
     kubernetes.io/cluster-service: "true"
     version: v0.3.1
-  name: metrics-server
-  namespace: kube-system
+name: metrics-server
+namespace: kube-system
 spec:
   progressDeadlineSeconds: 2147483647
   replicas: 1
@@ -475,8 +475,8 @@ metadata:
   generation: 1
   labels:
     k8s-app: dashboard-metrics-scraper
-  name: dashboard-metrics-scraper
-  namespace: kubernetes-dashboard
+name: dashboard-metrics-scraper
+namespace: kubernetes-dashboard
 spec:
   progressDeadlineSeconds: 600
   replicas: 1
@@ -544,8 +544,8 @@ metadata:
   generation: 1
   labels:
     k8s-app: kubernetes-dashboard
-  name: kubernetes-dashboard
-  namespace: kubernetes-dashboard
+name: kubernetes-dashboard
+namespace: kubernetes-dashboard
 spec:
   progressDeadlineSeconds: 600
   replicas: 1
@@ -623,8 +623,8 @@ metadata:
     component: node-exporter
     heritage: Tiller
     release: prometheus
-  name: prometheus-node-exporter
-  namespace: monitoring
+name: prometheus-node-exporter
+namespace: monitoring
 spec:
   revisionHistoryLimit: 10
   selector:
@@ -702,8 +702,8 @@ metadata:
     app.kubernetes.io/name: fluentd-elasticsearch
     app.kubernetes.io/version: 3.0.4
     helm.sh/chart: fluentd-elasticsearch-10.0.0
-  name: fluentd-elasticsearch
-  namespace: elk
+name: fluentd-elasticsearch
+namespace: elk
 spec:
   revisionHistoryLimit: 10
   selector:
