@@ -557,3 +557,38 @@ spec:
     release: prometheus
   sessionAffinity: None
   type: NodePort
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-alertmanager
+  namespace: monitoring
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-kube-state-metrics
+  namespace: monitoring
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-node-exporter
+  namespace: monitoring
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-server
+  namespace: monitoring
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-pushgateway
+  namespace: monitoring

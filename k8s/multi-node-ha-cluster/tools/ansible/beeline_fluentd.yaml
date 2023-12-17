@@ -181,3 +181,10 @@ spec:
     rollingUpdate:
       maxUnavailable: 1
     type: RollingUpdate
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd-elasticsearch
+  namespace: elk

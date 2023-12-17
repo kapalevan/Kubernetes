@@ -191,3 +191,11 @@ spec:
   type: NodePort
 status:
   loadBalancer: {}
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
