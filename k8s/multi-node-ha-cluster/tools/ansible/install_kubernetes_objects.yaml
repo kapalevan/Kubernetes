@@ -44,12 +44,12 @@
     #     kubectl create namespace elk
     #   ignore_errors: yes
     
-    # - name: Create namespace for kubernetes-dashboard
-    #   become: true      
-    #   shell: | 
-    #     {{ kubeconfig_task }}
-    #     kubectl create namespace kubernetes-dashboard
-    #   ignore_errors: yes
+    - name: Create namespace for kubernetes-dashboard
+      become: true      
+      shell: | 
+        {{ kubeconfig_task }}
+        kubectl create namespace kubernetes-dashboard
+      ignore_errors: yes
 
       
     # - name: deploy fluentd
@@ -66,16 +66,16 @@
     #   args:
     #     executable: /bin/bash
       
-    # - name: deploy kubernetes dashboard
-    #   shell: | 
-    #     {{ kubeconfig_task }} 
-    #     kubectl apply -f beeline_kubernetes_dashboard.yaml -n kubernetes-dashboard
-    #   args:
-    #     executable: /bin/bash
-
-    - name: deploy metric server
+    - name: deploy kubernetes dashboard
       shell: | 
         {{ kubeconfig_task }} 
-        kubectl apply -f beeline_metric_server.yaml -n kube-system
+        kubectl apply -f beeline_kubernetes_dashboard.yaml -n kubernetes-dashboard
       args:
         executable: /bin/bash
+
+    # - name: deploy metric server
+    #   shell: | 
+    #     {{ kubeconfig_task }} 
+    #     kubectl apply -f beeline_metric_server.yaml -n kube-system
+    #   args:
+    #     executable: /bin/bash

@@ -5,6 +5,14 @@ metadata:
   name: kubernetes-dashboard
   namespace: kubernetes-dashboard
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  creationTimestamp: "2023-12-17T23:04:47Z"
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+type: Opaque
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
