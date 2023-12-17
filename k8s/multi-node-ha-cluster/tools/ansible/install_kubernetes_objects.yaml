@@ -60,6 +60,12 @@
       command: |
             chmod +x /tmp/kubernetes-dashboard.yaml
 
+    - name: Replace API server host in YAML file
+      replace:
+        path: /tmp/kubernetes-dashboard.yaml
+        regexp: '^(apiserver-host=)(http://)my-address(:port)$'
+        replace: '\1{{ apiserver }} '
+
     - name: deploy Kubernetes Dashboard YAML
       shell: | 
         {{ kubeconfig_task }} 
@@ -79,13 +85,6 @@
     #   shell: | 
     #     {{ kubeconfig_task }} 
     #     kubectl apply -f beeline_prometheus.yaml -n monitoring
-    #   args:
-    #     executable: /bin/bash
-      
-    # - name: deploy kubernetes dashboard
-    #   shell: | 
-    #     {{ kubeconfig_task }} 
-    #     kubectl apply -f beeline_kubernetes_dashboard.yaml -n kubernetes-dashboard
     #   args:
     #     executable: /bin/bash
 
