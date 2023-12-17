@@ -51,6 +51,22 @@
         kubectl create namespace kubernetes-dashboard
       ignore_errors: yes
 
+    - name: Download Kubernetes Dashboard YAML
+      get_url:
+        url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.5.0/aio/deploy/recommended.yaml"
+        dest: "/tmp/kubernetes-dashboard.yaml"
+
+    - name: give permissions to kubernetes-dashboard.yaml
+      command: |
+            chmod +x /tmp/kubernetes-dashboard.yaml
+
+    - name: deploy Kubernetes Dashboard YAML
+      shell: | 
+        {{ kubeconfig_task }} 
+        kubectl apply -f /tmp/kubernetes-dashboard.yaml
+      args:
+        executable: /bin/bash
+
       
     # - name: deploy fluentd
     #   shell: | 
@@ -66,12 +82,12 @@
     #   args:
     #     executable: /bin/bash
       
-    - name: deploy kubernetes dashboard
-      shell: | 
-        {{ kubeconfig_task }} 
-        kubectl apply -f beeline_kubernetes_dashboard.yaml -n kubernetes-dashboard
-      args:
-        executable: /bin/bash
+    # - name: deploy kubernetes dashboard
+    #   shell: | 
+    #     {{ kubeconfig_task }} 
+    #     kubectl apply -f beeline_kubernetes_dashboard.yaml -n kubernetes-dashboard
+    #   args:
+    #     executable: /bin/bash
 
     # - name: deploy metric server
     #   shell: | 
