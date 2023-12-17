@@ -64,7 +64,7 @@
       replace:
         path: /tmp/kubernetes-dashboard.yaml
         regexp: '^(apiserver-host=)(http://)my-address(:port)$'
-        replace: '\1{{ apiserver }} '
+        replace: '\1https://api-server.devops.tbc:6443 '
 
     - name: deploy Kubernetes Dashboard YAML
       shell: | 
