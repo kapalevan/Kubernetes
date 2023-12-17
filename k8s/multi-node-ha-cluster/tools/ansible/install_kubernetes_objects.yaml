@@ -59,12 +59,12 @@
       args:
         executable: /bin/bash
 
-    - name: deploy prometheus
-      shell: | 
-        {{ kubeconfig_task }} 
-        kubectl apply -f beeline_prometheus.yaml -n monitoring
-      args:
-        executable: /bin/bash
+    # - name: deploy prometheus
+    #   shell: | 
+    #     {{ kubeconfig_task }} 
+    #     kubectl apply -f beeline_prometheus.yaml -n monitoring
+    #   args:
+    #     executable: /bin/bash
       
     - name: deploy kubernetes dashboard
       shell: | 
