@@ -62,7 +62,7 @@
 
     - name: Replace API server host in YAML file
       shell: |
-        sed -i 's|apiserver-host=http://my-address:port|apiserver-host=https://api-server.devops.tbc:6443|' /tmp/kubernetes-dashboard.yaml
+        sed -i 's|apiserver-host=http://my-address:port|apiserver-host={{apiserver}}|' /tmp/kubernetes-dashboard.yaml
       args:
         executable: /bin/bash
 
