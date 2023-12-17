@@ -1,0 +1,140 @@
+- hosts: masters
+  become: true
+  vars_files:
+    - vault.yaml
+
+  tasks:
+    - name: Get kubeconfig from master01
+      fetch:
+        src: "~/.kube/config"
+        dest: "/tmp/master1_kubeconfig"
+        flat: yes
+      when: inventory_hostname == "master01"
+
+- hosts: localhost
+  connection: local
+  become: true
+  vars_files:
+    - vars.yaml
+  tasks:
+    # - name: Set KUBECONFIG environment variable
+    #   lineinfile:
+    #     path: /home/bereja@devops.tbc/.bashrc
+    #     line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
+    #     state: present   
+
+    - name: Set KUBECONFIG environment variable
+      shell: "{{ kubeconfig_task }}"
+      args:
+        executable: /bin/bash
+
+    - name: Get Kubernetes Nodes
+      become: true
+      shell: | 
+        {{ kubeconfig_task }}
+        kubectl get nodes
+      
+
+    - name: Download and install Helm
+      become: true
+      shell: |
+        wget https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz
+        tar -zxvf helm-v3.8.1-linux-amd64.tar.gz
+        mv linux-amd64/helm /tmp/helm
+      tags:
+        - helm
+
+    # - name: Set PATH for Helm
+    #   command: "ln -s /usr/local/bin/helm /home/bereja@devops.tbc/ansible/Kubernetes/k8s/multi-node-ha-cluster/tools/ansible"
+
+    - name: Make helm executable
+      command: |
+            chmod +x /tmp/helm
+
+    - name: Add Prometheus Helm repository
+      become: true
+      command: /tmp/helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+      tags:
+        - helm
+
+    - name: Update Helm repositories
+      become: true      
+      command: /tmp/helm repo update
+      tags:
+        - helm
+
+    - name: Create namespace for monitoring
+      become: true      
+      shell: | 
+        {{ kubeconfig_task }}
+        kubectl create namespace monitoring
+      ignore_errors: yes
+
+    - name: Deploy Prometheus
+      become: true
+      shell: | 
+        {{ kubeconfig_task }}
+        /tmp/helm install prometheus prometheus-community/prometheus -n monitoring
+      tags:
+        - prometheus
+
+    - name: Deploy kube-state-metrics
+      become: true
+      shell: | 
+        {{ kubeconfig_task }}
+        /tmp/helm install kube-state-metrics prometheus-community/kube-state-metrics -n monitoring
+      tags:
+        - kube-state-metrics
+    - name: Deploy Alertmanager
+      become: true   
+      shell: | 
+        {{ kubeconfig_task }}   
+        /tmp/helm install alertmanager prometheus-community/alertmanager -n monitoring
+      tags:
+        - alertmanager
+
+#Provision fluend in Kubernetes cluster
+    - name: Create namespace for monitoring
+      become: true      
+      shell: | 
+        {{ kubeconfig_task }}
+        kubectl create namespace elk
+      ignore_errors: yes
+
+      
+    - name: deploy fluend YAML
+      shell: | 
+        {{ kubeconfig_task }} 
+        kubectl apply -f fluentd.yaml
+      args:
+        executable: /bin/bash
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    - name: Download Kubernetes Dashboard YAML
+      get_url:
+        url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.5.0/aio/deploy/recommended.yaml"
+        dest: "/tmp/kubernetes-dashboard.yaml"
+
+    - name: give permissions to kubernetes-dashboard.yaml
+      command: |
+            chmod +x /tmp/kubernetes-dashboard.yaml
+
+    - name: deploy Kubernetes Dashboard YAML
+      shell: | 
+        {{ kubeconfig_task }} 
+        kubectl apply -f /tmp/kubernetes-dashboard.yaml
+      args:
+        executable: /bin/bash
