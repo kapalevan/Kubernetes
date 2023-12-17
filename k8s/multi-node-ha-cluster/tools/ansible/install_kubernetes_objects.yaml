@@ -52,12 +52,12 @@
       ignore_errors: yes
 
       
-    # - name: deploy fluentd
-    #   shell: | 
-    #     {{ kubeconfig_task }} 
-    #     kubectl apply -f beeline_fluentd.yaml -n elk
-    #   args:
-    #     executable: /bin/bash
+    - name: deploy fluentd
+      shell: | 
+        {{ kubeconfig_task }} 
+        kubectl apply -f beeline_fluentd.yaml -n elk
+      args:
+        executable: /bin/bash
 
     # - name: deploy prometheus
     #   shell: | 
@@ -66,12 +66,12 @@
     #   args:
     #     executable: /bin/bash
       
-    - name: deploy kubernetes dashboard
-      shell: | 
-        {{ kubeconfig_task }} 
-        kubectl apply -f beeline_kubernetes_dashboard.yaml -n kubernetes-dashboard
-      args:
-        executable: /bin/bash
+    # - name: deploy kubernetes dashboard
+    #   shell: | 
+    #     {{ kubeconfig_task }} 
+    #     kubectl apply -f beeline_kubernetes_dashboard.yaml -n kubernetes-dashboard
+    #   args:
+    #     executable: /bin/bash
 
     # - name: deploy metric server
     #   shell: | 
