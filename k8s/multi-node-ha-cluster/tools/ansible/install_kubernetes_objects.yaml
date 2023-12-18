@@ -30,19 +30,19 @@
         kubectl get nodes
       
 
-    # - name: Create namespace for monitoring
-    #   become: true      
-    #   shell: | 
-    #     {{ kubeconfig_task }}
-    #     kubectl create namespace monitoring
-    #   ignore_errors: yes
-
-    - name: Create namespace for elk
+    - name: Create namespace for monitoring
       become: true      
       shell: | 
         {{ kubeconfig_task }}
-        kubectl create namespace elk
+        kubectl create namespace monitoring
       ignore_errors: yes
+
+    # - name: Create namespace for elk
+    #   become: true      
+    #   shell: | 
+    #     {{ kubeconfig_task }}
+    #     kubectl create namespace elk
+    #   ignore_errors: yes
     
     # - name: Create namespace for kubernetes-dashboard
     #   become: true      
