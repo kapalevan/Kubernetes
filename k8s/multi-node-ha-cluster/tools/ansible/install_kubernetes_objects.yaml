@@ -76,18 +76,35 @@
     - name: Check Kubernetes Dashboard Pod Readiness
       shell: |
         {{ kubeconfig_task }}
-        namespace="kubernetes-dashboard"
-        pod_list=$(kubectl get pods -n $namespace --output=jsonpath='{.items[*].metadata.name}')
+        namespace="kubernetes-dashboard"  # Set the namespace
+        end_time=$((SECONDS + 300))  # Set the end time for the loop (5 minutes)
         
-        for pod_name in $pod_list; do
-          readiness_status=$(kubectl get pod -n $namespace $pod_name -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
-          if [ "$readiness_status" == "True" ]; then
-            echo "Pod $pod_name in namespace $namespace is ready."
-          else
-            echo "Pod $pod_name in namespace $namespace is not ready."
-            exit 1  # You can choose to fail the task if any pod is not ready
+        while [ $SECONDS -lt $end_time ]; do
+          pod_list=$(kubectl get pods -n $namespace --output=jsonpath='{.items[*].metadata.name}')
+          
+          all_pods_ready=true
+          
+          for pod_name in $pod_list; do
+            readiness_status=$(kubectl get pod -n $namespace $pod_name -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
+            if [ "$readiness_status" != "True" ]; then
+              echo "Pod $pod_name in namespace $namespace is not ready."
+              all_pods_ready=false
+              break
+            fi
+          done
+
+          if [ "$all_pods_ready" == "true" ]; then
+            echo "All pods in namespace $namespace are ready."
+            break
           fi
+
+          sleep 5  # Sleep for 5 seconds before checking again
         done
+        
+        if [ $SECONDS -ge $end_time ]; then
+          echo "Timeout: Not all pods in namespace $namespace became ready within 5 minutes."
+          exit 1
+        fi
       args:
         executable: /bin/bash
 
