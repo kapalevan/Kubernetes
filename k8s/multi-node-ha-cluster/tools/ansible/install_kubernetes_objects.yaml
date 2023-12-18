@@ -30,11 +30,11 @@
         kubectl get nodes
       
 
-    - name: Create namespace for monitoring
-      become: true      
-      shell: | 
-        {{ kubeconfig_task }}
-        kubectl create namespace monitoring
+    # - name: Create namespace for monitoring
+    #   become: true      
+    #   shell: | 
+    #     {{ kubeconfig_task }}
+    #     kubectl create namespace monitoring
       ignore_errors: yes
 
     # - name: Create namespace for elk
@@ -119,7 +119,7 @@
     - name: deploy prometheus
       shell: | 
         {{ kubeconfig_task }} 
-        kubectl apply -f beeline_prometheus.yaml -n monitoring
+        kubectl apply -f beeline_prometheus.yaml -n default
       args:
         executable: /bin/bash
 
