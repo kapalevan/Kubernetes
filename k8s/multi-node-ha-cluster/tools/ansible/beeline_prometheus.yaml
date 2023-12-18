@@ -3,31 +3,31 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: prometheus-alertmanager
-  namespace: monitoring
+  namespace: default
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: prometheus-kube-state-metrics
-  namespace: monitoring
+  namespace: default
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: prometheus-node-exporter
-  namespace: monitoring
+  namespace: default
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: prometheus-server
-  namespace: monitoring
+  namespace: default
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: prometheus-pushgateway
-  namespace: monitoring
+  namespace: default
 ---
 apiVersion: v1
 data:
@@ -235,7 +235,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-server
-  namespace: monitoring
+  namespace: default
 ---
 apiVersion: v1
 data:
@@ -257,7 +257,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-alertmanager
-  namespace: monitoring
+  namespace: default
 
 ---
 apiVersion: apps/v1
@@ -273,7 +273,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-alertmanager
-  namespace: monitoring
+  namespace: default
 spec:
   progressDeadlineSeconds: 2147483647
   replicas: 1
@@ -379,7 +379,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-kube-state-metrics
-  namespace: monitoring
+  namespace: default
 spec:
   progressDeadlineSeconds: 2147483647
   replicas: 1
@@ -438,7 +438,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-pushgateway
-  namespace: monitoring
+  namespace: default
 spec:
   progressDeadlineSeconds: 2147483647
   replicas: 1
@@ -507,7 +507,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-server
-  namespace: monitoring
+  namespace: default
 spec:
   progressDeadlineSeconds: 2147483647
   replicas: 1
@@ -621,7 +621,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-node-exporter
-  namespace: monitoring
+  namespace: default
 spec:
   revisionHistoryLimit: 10
   selector:
@@ -697,7 +697,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-alertmanager
-  namespace: monitoring
+  namespace: default
 spec:
   ports:
   - name: http
@@ -724,7 +724,7 @@ spec:
       heritage: Tiller
       release: prometheus
     name: prometheus-kube-state-metrics
-    namespace: monitoring
+    namespace: default
   spec:
     clusterIP: None
     ports:
@@ -752,7 +752,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-node-exporter
-  namespace: monitoring
+  namespace: default
 spec:
   clusterIP: None
   ports:
@@ -779,7 +779,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-pushgateway
-  namespace: monitoring
+  namespace: default
 spec:
   ports:
   - name: http
@@ -803,7 +803,7 @@ metadata:
     heritage: Tiller
     release: prometheus
   name: prometheus-server
-  namespace: monitoring
+  namespace: default
 spec:
   externalTrafficPolicy: Cluster
   ports:
