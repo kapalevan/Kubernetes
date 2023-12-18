@@ -67,7 +67,7 @@
       become: true      
       shell: | 
         {{ kubeconfig_task }}
-        kubectl create namespace monitoring
+        kubectl create namespace monitoring1
       ignore_errors: yes
 
     - name: Deploy Prometheus
@@ -93,21 +93,21 @@
       tags:
         - alertmanager
 
-#Provision fluend in Kubernetes cluster
-    - name: Create namespace for monitoring
-      become: true      
-      shell: | 
-        {{ kubeconfig_task }}
-        kubectl create namespace elk
-      ignore_errors: yes
+# #Provision fluend in Kubernetes cluster
+#     - name: Create namespace for monitoring
+#       become: true      
+#       shell: | 
+#         {{ kubeconfig_task }}
+#         kubectl create namespace elk
+#       ignore_errors: yes
 
       
-    - name: deploy fluend YAML
-      shell: | 
-        {{ kubeconfig_task }} 
-        kubectl apply -f fluentd.yaml
-      args:
-        executable: /bin/bash
+#     - name: deploy fluend YAML
+#       shell: | 
+#         {{ kubeconfig_task }} 
+#         kubectl apply -f fluentd.yaml
+#       args:
+#         executable: /bin/bash
 
     
 
