@@ -67,7 +67,7 @@
       become: true      
       shell: | 
         {{ kubeconfig_task }}
-        kubectl create namespace monitoring1
+        kubectl create namespace prometheus
       ignore_errors: yes
 
     - name: Deploy Prometheus
