@@ -111,7 +111,7 @@
       
     - name: deploy fluentd
       shell: | 
-        {{ kube }} 
+        {{ kubeconfig_task }} 
         kubectl apply -f beeline_fluentd.yaml -n elk
       args:
         executable: /bin/bash
