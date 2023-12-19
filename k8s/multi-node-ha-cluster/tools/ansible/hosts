@@ -1,2 +1,2 @@
 [masters]
-master01 ansible_host=172.30.130.10
+tb-dmp-kbm001.bee.mobitel.local ansible_host=172.30.130.10
