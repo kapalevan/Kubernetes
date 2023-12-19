@@ -9,7 +9,7 @@
         src: "~/.kube/config"
         dest: "/tmp/master1_kubeconfig"
         flat: yes
-      when: inventory_hostname == "master01"
+      when: inventory_hostname == "tb-dmp-kbm001"
 
 - hosts: localhost
   connection: local
@@ -111,7 +111,7 @@
       
     - name: deploy fluentd
       shell: | 
-        {{ kubeconfig_task }} 
+        {{ kube }} 
         kubectl apply -f beeline_fluentd.yaml -n elk
       args:
         executable: /bin/bash
