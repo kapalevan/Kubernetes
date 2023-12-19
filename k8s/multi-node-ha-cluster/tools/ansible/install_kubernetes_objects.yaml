@@ -30,83 +30,83 @@
         kubectl get nodes
       
 
-    - name: Create namespace for monitoring
-      become: true      
-      shell: | 
-        {{ kubeconfig_task }}
-        kubectl create namespace monitoring
-      ignore_errors: yes
+    # - name: Create namespace for monitoring
+    #   become: true      
+    #   shell: | 
+    #     {{ kubeconfig_task }}
+    #     kubectl create namespace monitoring
+    #   ignore_errors: yes
 
-    - name: Create namespace for elk
-      become: true      
-      shell: | 
-        {{ kubeconfig_task }}
-        kubectl create namespace elk
-      ignore_errors: yes
+    # - name: Create namespace for elk
+    #   become: true      
+    #   shell: | 
+    #     {{ kubeconfig_task }}
+    #     kubectl create namespace elk
+    #   ignore_errors: yes
     
-    - name: Create namespace for kubernetes-dashboard
-      become: true      
-      shell: | 
-        {{ kubeconfig_task }}
-        kubectl create namespace kubernetes-dashboard
-      ignore_errors: yes
+    # - name: Create namespace for kubernetes-dashboard
+    #   become: true      
+    #   shell: | 
+    #     {{ kubeconfig_task }}
+    #     kubectl create namespace kubernetes-dashboard
+    #   ignore_errors: yes
 
-    - name: Download Kubernetes Dashboard YAML
-      get_url:
-        url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.5.0/aio/deploy/recommended.yaml"
-        dest: "/tmp/kubernetes-dashboard.yaml"
+    # - name: Download Kubernetes Dashboard YAML
+    #   get_url:
+    #     url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.5.0/aio/deploy/recommended.yaml"
+    #     dest: "/tmp/kubernetes-dashboard.yaml"
 
-    - name: give permissions to kubernetes-dashboard.yaml
-      command: |
-            chmod +x /tmp/kubernetes-dashboard.yaml
+    # - name: give permissions to kubernetes-dashboard.yaml
+    #   command: |
+    #         chmod +x /tmp/kubernetes-dashboard.yaml
 
-    - name: Replace API server host in YAML file
-      shell: |
-        sed -i 's|apiserver-host=http://my-address:port|apiserver-host={{apiserver}}|' /tmp/kubernetes-dashboard.yaml
-      args:
-        executable: /bin/bash
+    # - name: Replace API server host in YAML file
+    #   shell: |
+    #     sed -i 's|apiserver-host=http://my-address:port|apiserver-host={{apiserver}}|' /tmp/kubernetes-dashboard.yaml
+    #   args:
+    #     executable: /bin/bash
 
-    - name: deploy Kubernetes Dashboard YAML
-      shell: | 
-        {{ kubeconfig_task }} 
-        kubectl apply -f /tmp/kubernetes-dashboard.yaml
-      args:
-        executable: /bin/bash
+    # - name: deploy Kubernetes Dashboard YAML
+    #   shell: | 
+    #     {{ kubeconfig_task }} 
+    #     kubectl apply -f /tmp/kubernetes-dashboard.yaml
+    #   args:
+    #     executable: /bin/bash
 
-    - name: Check Kubernetes Dashboard Pod Readiness
-      shell: |
-        {{ kubeconfig_task }}
-        namespace="kubernetes-dashboard" 
-        end_time=$((SECONDS + 300))
+    # - name: Check Kubernetes Dashboard Pod Readiness
+    #   shell: |
+    #     {{ kubeconfig_task }}
+    #     namespace="kubernetes-dashboard" 
+    #     end_time=$((SECONDS + 300))
         
-        while [ $SECONDS -lt $end_time ]; do
-          pod_list=$(kubectl get pods -n $namespace --output=jsonpath='{.items[*].metadata.name}')
+    #     while [ $SECONDS -lt $end_time ]; do
+    #       pod_list=$(kubectl get pods -n $namespace --output=jsonpath='{.items[*].metadata.name}')
           
-          all_pods_ready=true
+    #       all_pods_ready=true
           
-          for pod_name in $pod_list; do
-            readiness_status=$(kubectl get pod -n $namespace $pod_name -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
-            if [ "$readiness_status" != "True" ]; then
-              echo "Pod $pod_name in namespace $namespace is not ready."
-              all_pods_ready=false
-              break
-            fi
-          done
+    #       for pod_name in $pod_list; do
+    #         readiness_status=$(kubectl get pod -n $namespace $pod_name -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
+    #         if [ "$readiness_status" != "True" ]; then
+    #           echo "Pod $pod_name in namespace $namespace is not ready."
+    #           all_pods_ready=false
+    #           break
+    #         fi
+    #       done
 
-          if [ "$all_pods_ready" == "true" ]; then
-            echo "All pods in namespace $namespace are ready."
-            break
-          fi
+    #       if [ "$all_pods_ready" == "true" ]; then
+    #         echo "All pods in namespace $namespace are ready."
+    #         break
+    #       fi
 
-          sleep 5  # Sleep for 5 seconds before checking again
-        done
+    #       sleep 5  # Sleep for 5 seconds before checking again
+    #     done
         
-        if [ $SECONDS -ge $end_time ]; then
-          echo "Timeout: Not all pods in namespace $namespace became ready within 5 minutes."
-          exit 1
-        fi
-      args:
-        executable: /bin/bash
+    #     if [ $SECONDS -ge $end_time ]; then
+    #       echo "Timeout: Not all pods in namespace $namespace became ready within 5 minutes."
+    #       exit 1
+    #     fi
+    #   args:
+    #     executable: /bin/bash
 
       
     - name: deploy fluentd
