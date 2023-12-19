@@ -1,4 +1,4 @@
 kubeconfig_task: |
-  echo 'export KUBECONFIG=/tmp/master1_kubeconfig' >> /home/bereja@devops.tbc/.bashrc
-  source /home/bereja@devops.tbc/.bashrc
-apiserver: https://api-server.devops.tbc:6443
+  echo 'export KUBECONFIG=/tmp/master1_kubeconfig' >> /home/iberezhiani/.bashrc
+  source /home/iberezhiani/.bashrc
+apiserver: https://tb-dmp-kba001.bee.mobitel.local:6443
