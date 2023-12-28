@@ -282,7 +282,7 @@ spec:
     spec:
       containers:
       - args:
-        - --config.file=/etc/config/alertmanager.yml
+        - --config.file=/etc/alertmanager/alertmanager.yml
         - --storage.path=/data
         - --cluster.advertise-address=$(POD_IP):6783
         - --web.external-url=/

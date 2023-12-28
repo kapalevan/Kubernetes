@@ -16,13 +16,7 @@
   become: true
   vars_files:
     - vars.yaml
-  tasks:
-    # - name: Set KUBECONFIG environment variable
-    #   lineinfile:
-    #     path: /home/bereja@devops.tbc/.bashrc
-    #     line: 'export KUBECONFIG=/tmp/master1_kubeconfig'
-    #     state: present   
-
+  tasks: 
     - name: Set KUBECONFIG environment variable
       shell: "{{ kubeconfig_task }}"
       args:
@@ -63,7 +57,7 @@
       tags:
         - helm
 
-    - name: Create namespace for monitoring
+    - name: Create namespace for prometheus
       become: true      
       shell: | 
         {{ kubeconfig_task }}
@@ -92,35 +86,6 @@
         /tmp/helm install alertmanager prometheus-community/alertmanager -n prometheus
       tags:
         - alertmanager
-
-# #Provision fluend in Kubernetes cluster
-#     - name: Create namespace for monitoring
-#       become: true      
-#       shell: | 
-#         {{ kubeconfig_task }}
-#         kubectl create namespace elk
-#       ignore_errors: yes
-
-      
-#     - name: deploy fluend YAML
-#       shell: | 
-#         {{ kubeconfig_task }} 
-#         kubectl apply -f fluentd.yaml
-#       args:
-#         executable: /bin/bash
-
-    
-
-
-
-
-
-
-
-
-
-
-
 
 
     - name: Download Kubernetes Dashboard YAML
